@@ -25,6 +25,7 @@ from rich.console import Console
 from erickfp.agent.gate import read_line as gate_read_line
 from erickfp.agent.loop import run_turn
 from erickfp.api.types import Block, Message
+from erickfp.memory.sqlite_store import SqliteStore
 from erickfp.provider.base import Provider
 from erickfp.provider.litellm_gemini import LiteLLMGeminiProvider
 from erickfp.tools.registry import ToolRegistry
@@ -108,23 +109,13 @@ def init() -> None:
 class PreambleSource(Protocol):
     """Forma estructural minima que `chat` necesita del Memory Store
     (Decision 5 del design: `Store.preamble() -> str`). Se define aqui, en
-    lugar de importar `erickfp.memory.store`, porque ese modulo aun no
-    existe en este lote (Fase 9 -- Memory store, pendiente). Cuando
-    `SqliteStore` exista, satisface esta misma forma sin cambios en
-    `build_system_context`.
+    lugar de importar `erickfp.memory.store.Store` directamente, para que
+    `build_system_context` acepte cualquier objeto con `.preamble() -> str`
+    (duck typing estructural) -- hoy lo satisface `SqliteStore` (Fase 9), y
+    en tests lo satisfacen dobles ad-hoc sin depender de `erickfp.memory`.
     """
 
     def preamble(self) -> str: ...
-
-
-class _NullStore:
-    """Store nulo (TODO Fase 9): preamble vacio hasta que `SqliteStore` este
-    cableado. `chat()` ya invoca `store.preamble()` -- el reemplazo por el
-    Store real es solo cuestion de inyectar otra instancia aqui.
-    """
-
-    def preamble(self) -> str:
-        return ""
 
 
 def _read_or_empty(path: Path) -> str:
@@ -201,7 +192,7 @@ def chat() -> None:
 
     console.print(f"[{_CYAN}]ErickFP chat -- Ctrl+D o 'salir' para terminar.[/{_CYAN}]")
 
-    system_context = build_system_context(root, _NullStore())
+    system_context = build_system_context(root, SqliteStore(root=root))
     provider = LiteLLMGeminiProvider()
 
     try:

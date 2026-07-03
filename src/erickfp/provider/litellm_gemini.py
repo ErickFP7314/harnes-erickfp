@@ -26,15 +26,13 @@ import litellm
 
 from erickfp.api.types import Block, Message, Response, ToolDef
 
-# TODO-ADR: alias provisional. El spike 2.1 (docs/spikes/thought-signature.md)
-# quedo bloqueado por una GEMINI_API_KEY reportada como filtrada por Google
-# (403 "reported as leaked" en 3 de los 4 alias probados) antes de poder
-# confirmar empiricamente cual de los alias mapeados por litellm 1.83.7
-# (`-preview`, `flash-latest`, `3.5-flash`) es el correcto para "Gemini 3
-# Flash". Se elige `-preview` por ser el nombre mas cercano al literal citado
-# en design.md/tasks.md. El ADR de modelo default se cierra recien cuando el
-# spike corra con una key nueva y valida (ver tasks.md 2.1/4.4).
-DEFAULT_MODEL = "gemini/gemini-3-flash-preview"
+# ADR-001 (2026-07-03): default elegido por el usuario con evidencia del spike
+# 2.1 (docs/spikes/thought-signature.md) — Gemma 4 acepta `tools`, devuelve
+# tool calls parseables y el round-trip de thought signatures funciona.
+# Trade-off aceptado: mas lento que gemini-3.5-flash (3.8s/8.8s vs 2.4s/2.0s)
+# a cambio de modelo abierto y cuota free tier mas generosa. Siempre
+# configurable via set_model()/constructor; esto fija solo el default.
+DEFAULT_MODEL = "gemini/gemma-4-26b-a4b-it"
 
 # Separador documentado en litellm/litellm_core_utils/prompt_templates/factory.py:64.
 THOUGHT_SIGNATURE_SEPARATOR = "__thought__"

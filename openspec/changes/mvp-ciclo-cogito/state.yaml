@@ -29,8 +29,8 @@ phases:
   apply:
     status: in_progress
     depends_on: [tasks]
-    lote_actual: 3
-    lotes_completados: [1, 2, 3]
+    lote_actual: 4
+    lotes_completados: [1, 2, 3, 4]
     artifact: openspec/changes/mvp-ciclo-cogito/tasks.md
     engram: sdd/mvp-ciclo-cogito/apply-progress
     nota: >
@@ -63,6 +63,26 @@ phases:
       duda/divide/ordena/enumera son de Fase 10 y cogito/ no puede importar
       cli.py). Siguiente lote sugerido: Fase 8 (Phase hooks, riesgo alto) en
       adelante.
+      Lote 4 = Fases 8-9 (Phase hooks + Memory store) COMPLETAS (14/14
+      tareas), Strict TDD real (RED confirmado con pytest antes de cada
+      GREEN). 100/100 tests en verde, ruff y mypy limpios sobre src/erickfp +
+      tests/ (mismos 6 E501 preexistentes de Lote 1 en scripts/, fuera de
+      scope). Fase 8: HookManager inyectado + PhaseContext (constraints
+      acumulativos, primer deny corta la cadena); core_guard bloquea
+      core/* incluso con gate aprobado, en toda fase/chat, resolviendo
+      paths relativos/../symlinks con Path.resolve(); adr_traceability
+      valida DFS por parents hasta un ADR raiz (ciclo/id inexistente/sin
+      referencia -> deny). agent/loop.py::run_turn EXTENDIDO (no
+      reescrito) con hook_manager/ctx opcionales, retrocompatible: hook
+      corre ANTES del gate. Fase 9: SqliteStore (schema entries,
+      CREATE TABLE IF NOT EXISTS, recall via LIKE, preamble concatena
+      fact/preference + ultimas session-summary) cableado en
+      cli.py::chat() reemplazando _NullStore (eliminada). Desviacion
+      documentada: adr_graph.py vive en hooks/ (no cogito/adr.py como decia
+      el design) por el contrato import-linter ya vigente (hooks no puede
+      depender de cogito); pyproject.toml actualizado con capa erickfp.agent
+      + dependencia pyyaml/types-PyYAML. Siguiente lote sugerido: Fase 10
+      (Ciclo Cogito integrador) en adelante.
   verify:
     status: pending
     depends_on: [apply]

@@ -12,18 +12,23 @@ anexa a `messages` ANTES de decidir si el loop continua; cada `tool_result`
 lleva el `tool_use_id` correcto; los errores de tool (deny o fallo real)
 viajan como texto en el propio `tool_result`, nunca como excepcion.
 
-La integracion de hooks (PreToolUse/PostToolUse, Fase 8) se añadira en una
-fase posterior extendiendo `run_turn` -- a la fecha de esta fase (6) el loop
-solo conoce Provider + gate + tool registry (regla de dependencia de
-Decision 1: `agent` -> `api`, `provider`, `tools`; nunca -> `hooks`. Los
-hooks se inyectaran en el orquestador del Ciclo Cogito, Fase 10, si el
-diseño lo requiere para el chat general).
+Integracion de hooks (Fase 8, EXTIENDE esta funcion sin reescribirla, tal
+como anticipaba el docstring de la Fase 6): `hook_manager`/`ctx` son
+parametros OPCIONALES (default `None`) para no romper retrocompatibilidad
+con el llamador de la Fase 7 (`cli.py::run_chat_session`) ni con las pruebas
+de la Fase 6. Cuando se inyectan, cada `tool_use` dispara `PreToolUse` ANTES
+de llegar al gate -- un `deny` (p.ej. `core_guard` protegiendo `core/*`)
+bloquea la tool sin que el gate sea siquiera consultado (Requirement
+'Proteccion incondicional de core/*': el bloqueo no depende de la decision
+del humano). Si el hook aprueba, la tool sigue su camino normal hacia el
+gate; despues de resolverse (con o sin gate) se dispara `PostToolUse`.
 """
 
 from __future__ import annotations
 
 from erickfp.agent.gate import run_tool_with_gate
 from erickfp.api.types import Block, Message, ToolDef
+from erickfp.hooks.manager import HookManager, PhaseContext
 from erickfp.provider.base import Provider
 from erickfp.tools.registry import ToolRegistry
 
@@ -33,6 +38,8 @@ def run_turn(
     tools: ToolRegistry,
     messages: list[Message],
     tool_defs: list[ToolDef],
+    hook_manager: HookManager | None = None,
+    ctx: PhaseContext | None = None,
 ) -> list[Message]:
     """Ejecuta un turno completo hasta `stop_reason != "tool_use"`.
 
@@ -67,6 +74,25 @@ def run_turn(
                     )
                 )
                 continue
+
+            if hook_manager is not None and ctx is not None:
+                ctx.tool_name = block.tool_name
+                ctx.tool_input = block.tool_input
+                pre_result = hook_manager.run("PreToolUse", ctx)
+                if pre_result.decision == "deny":
+                    result_blocks.append(
+                        Block(
+                            type="tool_result",
+                            tool_use_id=block.tool_use_id,
+                            tool_result=pre_result.reason,
+                            is_error=True,
+                        )
+                    )
+                    continue
+
             result_blocks.append(run_tool_with_gate(tool, block))
+
+            if hook_manager is not None and ctx is not None:
+                hook_manager.run("PostToolUse", ctx)
 
         current_messages = [*current_messages, Message(role="user", content=result_blocks)]

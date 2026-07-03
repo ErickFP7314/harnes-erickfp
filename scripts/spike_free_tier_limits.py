@@ -39,7 +39,7 @@ TOOL_DEF = {
 # N llamadas a intentar; 15 > 10 RPM del free tier tipico para forzar el
 # limite dentro de la ventana de un minuto si existe.
 N_LLAMADAS = 15
-MODELO = "gemini/gemini-3-flash-preview"  # ver docs/spikes/thought-signature.md
+MODELO = "gemini/gemma-4-26b-a4b-it"  # ADR-001: modelo default elegido por el usuario
 
 
 def load_dotenv_if_present() -> None:

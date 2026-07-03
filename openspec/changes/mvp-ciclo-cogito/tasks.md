@@ -12,8 +12,8 @@ Strict TDD activo desde la Fase 1: cada tarea de implementación indica su test 
 
 ## Fase 2: Spikes de riesgo (de-risking antes de implementar)
 
-- [ ] 2.1 **[SPIKE obligatorio]** Round-trip de thought signatures: script `scripts/spike_thought_signature.py`, LiteLLM real + `gemini/gemini-3-flash`, 2 turnos con tool calling. Criterio de salida: doc `docs/spikes/thought-signature.md` con el campo exacto donde LiteLLM expone la firma y cómo re-inyectarla; si NO es viable, ADR alterno (cambiar modelo default o degradar a single-turn) en `.ErickFP/adr/` (tras `init`, ver Fase 7). **BLOQUEADO — CRÍTICO DE SEGURIDAD: la `GEMINI_API_KEY` del `.env` fue RECHAZADA por Google (`403 PERMISSION_DENIED: "Your API key was reported as leaked"`) en 3 de los 4 modelos probados con llamadas reales** (`gemini/gemini-3-flash-preview`, `gemini/gemini-flash-latest`, `gemini/gemini-3.5-flash`; `gemini/gemma-3-27b-it` dio 404 — modelo no encontrado en el endpoint v1beta, hallazgo independiente de la key). NO es un problema de código — requiere que el usuario revoque esta key y genere una nueva antes de poder cerrar este spike. No se marca `[x]` porque el criterio de salida (round-trip confirmado empíricamente) no se cumplió — solo se documentó el bloqueo y el análisis estático (que sigue vigente). Ver `docs/spikes/thought-signature.md` para la acción requerida completa y la tabla comparativa parcial (Gemma incluida, ampliación pedida por el usuario 2026-07-03).
-- [ ] 2.2 **[SPIKE]** Límites free tier con tool calling: medir con llamadas reales si 10 RPM alcanza un turno agéntico multi-tool (ida-vuelta duda-tipo). Criterio de salida: doc `docs/spikes/free-tier-limits.md` con resultado y mitigación (backoff/cache) si no alcanza. **BLOQUEADO — misma causa raíz que 2.1** (key reportada como filtrada). No se ejecutaron las 15 llamadas planificadas: la evidencia de 2.1 (3/4 rechazos 403 por la key) ya demostró que ninguna llamada funcionaría, y seguir llamando con una key marcada como comprometida no es buena práctica. Ningún 429 observado — el bloqueo es de autenticación, no de cuota. Pendiente de key nueva para correr el plan de medición real.
+- [x] 2.1 **[SPIKE obligatorio]** Round-trip de thought signatures: script `scripts/spike_thought_signature.py`, LiteLLM real, 2 turnos con tool calling. **CERRADO 2026-07-03 con key nueva** (el bloqueo previo por key filtrada quedó documentado en el historial de este archivo y en engram `config/gemini-api-key-status`). Resultado: los 5 modelos probados (`gemini-3-flash-preview`, `gemini-flash-latest`, `gemini-3.5-flash`, `gemma-4-26b-a4b-it`, `gemma-4-31b-it`) aceptan `tools`, devuelven tool calls parseables y completan el round-trip de thought signatures re-inyectando `tool_call.id` (mecanismo `__thought__` confirmado empíricamente). Nota: `gemma-3-27b-it` NO existe en v1beta (404); los nombres reales de Gemma se obtuvieron del endpoint `GET /v1beta/models`. **Desenlace: ADR-001 — el usuario eligió `gemini/gemma-4-26b-a4b-it` como modelo default** (registrado en engram `adr/001-modelo-default`; `DEFAULT_MODEL` actualizado con test RED→GREEN). Tabla completa en `docs/spikes/thought-signature.md`.
+- [x] 2.2 **[SPIKE]** Límites free tier con tool calling. **CERRADO 2026-07-03** con el modelo del ADR-001 (`gemma-4-26b-a4b-it`): 10 llamadas reales consecutivas OK sin ningún 429 — la latencia propia del modelo (3.8–13s/llamada) mantiene el ritmo bajo 10 RPM de forma natural; un turno agéntico multi-tool cabe sin mitigación. Hallazgo adicional: la llamada 11 devolvió `500 INTERNAL` transitorio del servidor (no de cuota) → **mitigación requerida: retry con backoff ante 500 esporádicos en el adapter** (anotado para Fase 11). Detalle en `docs/spikes/free-tier-limits.md`.
 - [x] 2.3 **[SPIKE]** Prompt y/n compartido en REPL (Typer/Rich): validar que la lectura de stdin del permission gate y la de prompts de fase no compiten (pitfall "scanner races" del cap. 02, versión Python). Criterio de salida: doc `docs/spikes/repl-input.md` con el patrón validado (un único consumer de `input()`) o el fix necesario. Completado: patrón validado (única función `read_line()` wrapper de `input()`, Rich `Console.input()` confirmado equivalente por código fuente), sin dependencia de red.
 
 ## Fase 3: `api/types` (sin dependencias — base cartesiana)
@@ -63,23 +63,23 @@ Strict TDD activo desde la Fase 1: cada tarea de implementación indica su test 
 
 ## Fase 8: Phase hooks (riesgo alto: fuga en protección de `core/*`)
 
-- [ ] 8.1 RED: `tests/hooks/test_base.py` — `FakeHook` satisface Protocol `Hook`; `HookResult(decision, reason)`.
-- [ ] 8.2 GREEN: crear `src/erickfp/hooks/base.py`.
-- [ ] 8.3 RED: `tests/hooks/test_manager.py::test_constraints_accumulate_across_phase_starts` — `PhaseContext.constraints` se acumulan entre `PhaseStart` sucesivos (divide→ordena).
-- [ ] 8.4 GREEN: crear `src/erickfp/hooks/manager.py` (`HookManager` inyectado, `PhaseContext`).
-- [ ] 8.5 RED (nombrado): `test_core_guard_blocks_write_to_core_even_after_gate_approval` — `write_file` a `.ErickFP/core/*` bloqueado en `PreToolUse` pese a "y" del gate.
-- [ ] 8.6 RED (nombrado): `test_core_guard_allows_writes_outside_core` — escritura fuera de `core/*` no bloqueada por este hook.
-- [ ] 8.7 RED (nombrado): `test_core_guard_active_in_every_phase_and_chat` — hook activo igual en `duda`/`divide`/`ordena`/`enumera`/`chat`.
-- [ ] 8.8 GREEN: crear `src/erickfp/hooks/core_guard.py`.
-- [ ] 8.9 RED: `tests/hooks/test_adr_traceability.py` — bloquea `PhaseStart` de `ordena` si el artefacto de `divide` no referencia un ADR padre; detecta ciclo e id inexistente; permite si el DFS llega a un nodo raíz.
-- [ ] 8.10 GREEN: crear `src/erickfp/hooks/adr_traceability.py` + `src/erickfp/cogito/adr.py` (parseo frontmatter YAML + DFS por `parents`).
+- [x] 8.1 RED: `tests/hooks/test_base.py` — `FakeHook` satisface Protocol `Hook`; `HookResult(decision, reason)`.
+- [x] 8.2 GREEN: crear `src/erickfp/hooks/base.py`.
+- [x] 8.3 RED: `tests/hooks/test_manager.py::test_constraints_accumulate_across_phase_starts` — `PhaseContext.constraints` se acumulan entre `PhaseStart` sucesivos (divide→ordena).
+- [x] 8.4 GREEN: crear `src/erickfp/hooks/manager.py` (`HookManager` inyectado, `PhaseContext`).
+- [x] 8.5 RED (nombrado): `test_core_guard_blocks_write_to_core_even_after_gate_approval` — `write_file` a `.ErickFP/core/*` bloqueado en `PreToolUse` pese a "y" del gate.
+- [x] 8.6 RED (nombrado): `test_core_guard_allows_writes_outside_core` — escritura fuera de `core/*` no bloqueada por este hook.
+- [x] 8.7 RED (nombrado): `test_core_guard_active_in_every_phase_and_chat` — hook activo igual en `duda`/`divide`/`ordena`/`enumera`/`chat`.
+- [x] 8.8 GREEN: crear `src/erickfp/hooks/core_guard.py`.
+- [x] 8.9 RED: `tests/hooks/test_adr_traceability.py` — bloquea `PhaseStart` de `ordena` si el artefacto de `divide` no referencia un ADR padre; detecta ciclo e id inexistente; permite si el DFS llega a un nodo raíz.
+- [x] 8.10 GREEN: crear `src/erickfp/hooks/adr_traceability.py` + parseo frontmatter YAML/DFS. **Deviación documentada**: la lógica de grafo vive en `src/erickfp/hooks/adr_graph.py` (NO en `src/erickfp/cogito/adr.py` como decía el design) porque el contrato `import-linter` ya vigente en `pyproject.toml` (Decisión 1) prohíbe que `hooks` dependa de `cogito` (jerarquía inversa); mantenerlo dentro de `hooks/` preserva la regla sin tocar el contrato. Además, extendida (no reescrita) `src/erickfp/agent/loop.py::run_turn` con parámetros opcionales `hook_manager`/`ctx` (default `None`, retrocompatible con Fase 6): `PreToolUse` corre ANTES del gate y un `deny` bloquea la tool sin consultar `input()`. `pyproject.toml` actualizado: capa `erickfp.agent` añadida al contrato de `import-linter` (dependencia real introducida `agent→hooks`) y dependencia explícita `pyyaml>=6.0` (+ `types-PyYAML` dev, mypy limpio).
 
 ## Fase 9: Memory store
 
-- [ ] 9.1 RED: `tests/memory/test_store.py` — `FakeStore` satisface Protocol `Store`.
-- [ ] 9.2 GREEN: crear `src/erickfp/memory/store.py`.
-- [ ] 9.3 RED: `tests/memory/test_sqlite_store.py` — `save()` persiste en `.ErickFP/memory/erickfp.db` (`tmp_path`); `recall(query, limit)` retorna coincidencias por `LIKE`; `preamble()` concatena `fact`/`preference` + últimas `session-summary`.
-- [ ] 9.4 GREEN: crear `src/erickfp/memory/sqlite_store.py` (schema `entries`, `CREATE TABLE IF NOT EXISTS`).
+- [x] 9.1 RED: `tests/memory/test_store.py` — `FakeStore` satisface Protocol `Store`.
+- [x] 9.2 GREEN: crear `src/erickfp/memory/store.py`.
+- [x] 9.3 RED: `tests/memory/test_sqlite_store.py` — `save()` persiste en `.ErickFP/memory/erickfp.db` (`tmp_path`); `recall(query, limit)` retorna coincidencias por `LIKE`; `preamble()` concatena `fact`/`preference` + últimas `session-summary`.
+- [x] 9.4 GREEN: crear `src/erickfp/memory/sqlite_store.py` (schema `entries`, `CREATE TABLE IF NOT EXISTS`). Cableado adicional (no listado como subtarea propia, pedido explícito de la orquestación): `src/erickfp/cli.py::chat()` reemplaza `_NullStore` por `SqliteStore(root=root)` real; `_NullStore` eliminada del código (ya no tiene uso). Cubierto por `tests/cli/test_chat_memory_wiring.py` (RED→GREEN).
 
 ## Fase 10: Ciclo Cogito (integra todas las capas)
 
@@ -95,5 +95,7 @@ Strict TDD activo desde la Fase 1: cada tarea de implementación indica su test 
 
 - [ ] 11.1 `tests/test_architecture_import_rules.py` + config `import-linter`: valida la regla de dependencia completa (`api→nada`; `provider|tools|memory→api`; `hooks→api`; `cogito→api,provider,tools,hooks,memory`; `cli→todo`).
 - [ ] 11.2 Ejecutar `ruff check` y `mypy` sobre `src/erickfp/`; corregir hallazgos.
-- [ ] 11.3 Smoke manual (E2E, no automatizado): `erickfp init` + `erickfp chat` real contra Gemini 3 Flash con API key; documentar resultado en `docs/smoke-e2e.md`.
+- [ ] 11.3 Smoke manual (E2E, no automatizado): `erickfp init` + `erickfp chat` real contra el modelo default del ADR-001 (`gemini/gemma-4-26b-a4b-it`) con API key; documentar resultado en `docs/smoke-e2e.md`.
 - [ ] 11.4 Actualizar `openspec/config.yaml` (`verify.test_command: pytest`, `coverage_threshold` acordado).
+- [ ] 11.5 Retry con backoff acotado ante `500 INTERNAL` transitorios en `litellm_gemini.py` (hallazgo del spike 2.2 con Gemma 4: 1 de 11 llamadas reales fallo con 500 esporadico; extender el patron de `scripts/spike_thought_signature.py::_call_with_backoff` a "500"/"INTERNAL"). TDD: test con mock que falla 1 vez con 500 y luego responde OK.
+- [ ] 11.6 Limpiar los 6 `E501` preexistentes de `scripts/spike_thought_signature.py` o excluir `scripts/` del linting (decision menor pendiente desde Lote 2).

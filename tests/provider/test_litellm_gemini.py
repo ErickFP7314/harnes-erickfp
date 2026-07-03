@@ -30,9 +30,9 @@ def _raw_tool_call_response(call_id: str = "call_abc123") -> SimpleNamespace:
 
 
 def test_default_model_is_a_configurable_constant() -> None:
-    # Alias provisional (TODO-ADR en litellm_gemini.py): el spike 2.1 quedo
-    # bloqueado por la key filtrada antes de confirmar el alias exacto.
-    assert DEFAULT_MODEL == "gemini/gemini-3-flash-preview"
+    # ADR-001 (2026-07-03): Gemma 4 elegido por el usuario con evidencia del
+    # spike 2.1 (tools + thought signatures round-trip verificados en vivo).
+    assert DEFAULT_MODEL == "gemini/gemma-4-26b-a4b-it"
 
 
 def test_provider_model_defaults_to_default_model_constant() -> None:

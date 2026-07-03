@@ -11,6 +11,7 @@ dependencies = [
     "typer>=0.12",
     "litellm>=1.40",
     "rich>=13.0",
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]
@@ -23,6 +24,7 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.10",
     "import-linter>=2.0",
+    "types-PyYAML>=6.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -50,15 +52,25 @@ disallow_untyped_defs = false
 # Reglas de dependencia entre capas -- Decision 1 del design.md.
 # Verificacion efectiva en Fase 11 (tests/test_architecture_import_rules.py),
 # aqui solo se declara el contrato.
+#
+# Nota (Fase 8, Lote 4): `erickfp.agent` no aparecia en el arbol de paquetes
+# de Decision 1 del design (se creo en la Fase 6 como implementacion del
+# permission gate + agent loop, sin actualizar el diagrama). Se declara aqui
+# explicitamente porque la Fase 8 introduce una dependencia real
+# `agent -> hooks` (agent/loop.py invoca HookManager en PreToolUse/
+# PostToolUse); sin esta capa el contrato quedaria desactualizado respecto al
+# codigo real. `agent` se ubica entre `cogito` y `hooks|tools|provider|memory`
+# porque depende de esas capas (via gate.py/loop.py) pero aun no de `cogito`.
 [tool.importlinter]
 root_package = "erickfp"
 
 [[tool.importlinter.contracts]]
-name = "Capas del harness (Decision 1 del design)"
+name = "Capas del harness (Decision 1 del design + Fase 8: agent)"
 type = "layers"
 layers = [
     "erickfp.cli",
     "erickfp.cogito",
+    "erickfp.agent",
     "erickfp.hooks | erickfp.tools | erickfp.provider | erickfp.memory",
     "erickfp.api",
 ]

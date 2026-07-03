@@ -176,11 +176,15 @@ def main() -> int:
     # Candidatos pedidos explicitamente por el coordinador (2026-07-03), en
     # orden: 3 alias de "Gemini 3 Flash" (el literal "gemini-3-flash" no esta
     # mapeado en litellm 1.83.7, ver hallazgo del analisis estatico) + Gemma 3.
+    # gemma-3-27b-it se retiro de la lista: el endpoint v1beta devolvio 404
+    # (confirmado 2026-07-03); el listado real de modelos de la API expone
+    # gemma-4-26b-a4b-it y gemma-4-31b-it (verificado via GET /v1beta/models).
     modelos_a_probar = [
         "gemini/gemini-3-flash-preview",
         "gemini/gemini-flash-latest",
         "gemini/gemini-3.5-flash",
-        "gemini/gemma-3-27b-it",
+        "gemini/gemma-4-26b-a4b-it",
+        "gemini/gemma-4-31b-it",
     ]
     no_mapeados = [m for m in modelos_a_probar if m not in available]
     if no_mapeados:

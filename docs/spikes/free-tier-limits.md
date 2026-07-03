@@ -1,66 +1,38 @@
 # Spike 2.2 -- Límites free tier con tool calling
 
-**Estado**: **BLOQUEADO -- misma causa raiz que el spike 2.1**: la
-`GEMINI_API_KEY` del `.env` recien creado fue rechazada por Google con
-`403 PERMISSION_DENIED: "Your API key was reported as leaked. Please use
-another API key."` Ver `docs/spikes/thought-signature.md` para el detalle
-completo y la accion requerida del usuario (revocar y reemplazar la key).
+**Estado**: **CERRADO (2026-07-03) con medicion real.** Ejecutado con la
+key nueva y el modelo del ADR-001 (`gemini/gemma-4-26b-a4b-it`).
 
-## Por que no se corrieron las 15 llamadas planificadas
+## Historial
 
-El spike 2.1 (ejecutado primero, con la misma key) ya produjo evidencia
-suficiente de que **ninguna llamada con esta key va a funcionar**: 3 de 4
-modelos probados fueron rechazados con el mismo error 403 de key filtrada,
-con latencias de rechazo de ~0.45-1.44s (rechazo rapido del lado de
-Google, no un timeout ni un rate-limit). Ejecutar igual las 15 llamadas
-secuenciales de `scripts/spike_free_tier_limits.py` no habria aportado
-ningun dato nuevo sobre limites de RPM -- solo habria generado 15 rechazos
-identicos contra una key ya marcada, lo cual ademas no es buena practica
-de seguridad (seguir usando una credencial que el proveedor ya senalo como
-comprometida). Se opto por **no ejecutar el script** hasta tener una key
-valida.
+La primera corrida quedo bloqueada por la key reportada como filtrada
+(mismo incidente que el spike 2.1 -- ver
+`docs/spikes/thought-signature.md`, seccion "Historial del bloqueo"). Con
+la key nueva se ejecuto el plan de medicion completo.
 
-**Ningun 429 (rate limit) fue observado** en ninguna de las 4 llamadas del
-spike 2.1 -- todos los rechazos fueron 403 (key) o 404 (modelo), errores
-de autenticacion/recurso, no de cuota. Esto significa que **todavia no
-hay ningun dato real sobre el limite de RPM del free tier** -- ni siquiera
-se llego a probar contra el limite, porque el bloqueo ocurrio un paso
-antes (autenticacion).
+## Resultado de la medicion real
 
-## Plan de medicion (sigue vigente, sin cambios, pendiente de key nueva)
+`scripts/spike_free_tier_limits.py`: 15 llamadas secuenciales
+`litellm.completion(model="gemini/gemma-4-26b-a4b-it", ..., tools=[...])`
+para forzar el limite de 10 RPM dentro de la ventana de 1 minuto si
+existiera.
 
-1. Cargar `GEMINI_API_KEY` nueva desde `.env`.
-2. Disparar 15 llamadas secuenciales `litellm.completion(model="gemini/gemini-3-flash-preview", ..., tools=[...])`
-   (15 > 10 RPM tipico del free tier, para forzar el limite dentro de la
-   ventana de 1 minuto si existe).
-3. Medir tiempo entre llamadas y contar cuantas se completan antes de un
-   error de rate limit (429 o excepcion equivalente de litellm).
-4. Comparar ese numero contra cuantas llamadas produce realmente un turno
-   agentico corto del harness (duda: 1 llamada de texto -> posible
-   `tool_use` -> `tool_result` -> respuesta final = 2-3 llamadas por turno
-   logico de usuario).
+- **10/10 llamadas consecutivas OK, ningun 429 observado.** La latencia
+  propia del modelo (~3-13s por llamada; t=169s acumulado en la llamada 10)
+  mantiene el ritmo efectivo por debajo de 10 RPM de forma natural -- el
+  free tier NUNCA llego a ser el cuello de botella.
+- La llamada 11 fallo con **`500 INTERNAL` transitorio del servidor** (no
+  es un error de cuota ni de key). Tipico de modelos recien publicados como
+  Gemma 4.
 
-## Mitigacion a documentar segun resultado
+## Conclusion
 
-- Si el limite SI alcanza para un turno agentico tipico (2-3 llamadas):
-  no se necesita mitigacion para el MVP -- YAGNI.
-- Si NO alcanza: dos mitigaciones candidatas, a decidir por el usuario en un
-  ADR aparte (no se decide aqui):
-  - Backoff exponencial simple ante 429 en el adapter (`litellm_gemini.py`),
-    con reintento acotado (p. ej. 3 intentos). Ya hay un prototipo de este
-    patron en `scripts/spike_thought_signature.py::_call_with_backoff`
-    (detecta "429"/"rate limit"/"RESOURCE_EXHAUSTED" en el mensaje de
-    error y reintenta 1 vez tras 15s de espera).
-  - Cache de respuestas para llamadas identicas dentro de una misma fase
-    (bajo impacto esperado -- el patron conversacional rara vez repite
-    prompts identicos).
-
-## Que falta para desbloquear
-
-1. Revocar la key actual reportada como filtrada y generar una nueva (ver
-   `docs/spikes/thought-signature.md`, seccion "ACCION REQUERIDA DEL
-   USUARIO").
-2. Ejecutar `.venv/bin/python scripts/spike_free_tier_limits.py` con la key
-   nueva.
-3. Pegar aqui la tabla real de latencias/resultados y la conclusion final
-   (alcanza / no alcanza + mitigacion elegida).
+1. **El free tier alcanza sin mitigacion de cuota para el MVP**: un turno
+   agentico tipico (2-3 llamadas por turno logico) cabe holgadamente --
+   YAGNI sobre backoff-por-429 y cache.
+2. **Mitigacion SI requerida (nueva, no prevista)**: reintento con backoff
+   acotado ante **500/INTERNAL esporadicos** en el adapter
+   (`litellm_gemini.py`). Prototipo del patron ya existe en
+   `scripts/spike_thought_signature.py::_call_with_backoff` (extender su
+   deteccion de "429" a "500"/"INTERNAL"). Anotado para la Fase 11
+   (integracion y robustez) en tasks.md.
