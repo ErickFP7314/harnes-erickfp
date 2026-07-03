@@ -1,0 +1,71 @@
+schema: spec-driven
+change: mvp-ciclo-cogito
+created: 2026-07-03
+artifact_store: hybrid
+execution_mode: interactive
+
+phases:
+  explore:
+    status: done
+    artifact: engram:sdd/mvp-ciclo-cogito/explore
+  propose:
+    status: done
+    artifact: openspec/changes/mvp-ciclo-cogito/proposal.md
+    engram: sdd/mvp-ciclo-cogito/proposal
+  spec:
+    status: done
+    artifact: openspec/changes/mvp-ciclo-cogito/specs/
+    engram: sdd/mvp-ciclo-cogito/spec
+  design:
+    status: done
+    depends_on: [propose]
+    artifact: openspec/changes/mvp-ciclo-cogito/design.md
+    engram: sdd/mvp-ciclo-cogito/design
+  tasks:
+    status: done
+    depends_on: [spec, design]
+    artifact: openspec/changes/mvp-ciclo-cogito/tasks.md
+    engram: sdd/mvp-ciclo-cogito/tasks
+  apply:
+    status: in_progress
+    depends_on: [tasks]
+    lote_actual: 2
+    lotes_completados: [1, 2]
+    artifact: openspec/changes/mvp-ciclo-cogito/tasks.md
+    engram: sdd/mvp-ciclo-cogito/apply-progress
+    nota: >
+      Lote 1 = Fases 1-2. Fase 1 completa (4/4). Fase 2 parcial (2.3 completa,
+      2.1/2.2 BLOQUEADOS: .env creado pero GEMINI_API_KEY rechazada por
+      Google como filtrada (403 "reported as leaked") en 3/4 modelos
+      probados con llamadas reales; gemma-3-27b-it dio 404 (modelo no
+      encontrado, hallazgo independiente). Requiere accion del usuario:
+      revocar y reemplazar la key antes de reintentar.
+      Lote 2 = Fases 3-5 (api/types, provider layer, tool registry) COMPLETAS
+      (18/18 tareas), Strict TDD real (RED confirmado antes de cada GREEN,
+      ver tabla de evidencia en apply-progress). 50/50 tests en verde, ruff y
+      mypy limpios sobre src/erickfp + tests/. Modelo default de la Fase 4
+      queda como constante provisional DEFAULT_MODEL =
+      "gemini/gemini-3-flash-preview" con TODO-ADR (no llamadas reales, key
+      sigue revocada) -- pendiente de cierre empirico cuando el spike 2.1
+      corra con key nueva. Siguiente lote sugerido: Fase 6 (Permission gate +
+      Agent loop, riesgo alto) en adelante.
+  verify:
+    status: pending
+    depends_on: [apply]
+  archive:
+    status: pending
+    depends_on: [verify]
+
+capabilities:
+  new:
+    - cli-init
+    - agent-loop
+    - provider-layer
+    - tool-registry
+    - ciclo-cogito
+    - phase-hooks
+    - memory-store
+  modified: []
+
+next_ready:
+  - apply

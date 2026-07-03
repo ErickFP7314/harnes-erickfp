@@ -1,0 +1,51 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: Python >=3.10 (greenfield; se instalará Typer + LiteLLM en venv propio del proyecto)
+  Architecture: harness agéntico CLI tipo byo-coding-agent (agent loop, permission gate,
+  Provider propia con impl LiteLLM/Gemini, tool registry) gobernado por método cartesiano
+  y grafo ADR con raíz en .ErickFP/core/Claude y .ErickFP/core/agents.
+  Testing: pytest instalado en .venv/ propio del proyecto (Fase 1, tarea 1.2).
+  Style: ruff + mypy + import-linter instalados. Prioridades raíz: 1) Legibilidad 2) Extensibilidad;
+  Robustez secundaria-innegociable; Simplicidad como regla de fase (YAGNI por etapa).
+
+# Fase 1 (tarea 1.3) instaló pytest+ruff+mypy+import-linter en .venv/ propio del proyecto.
+# STRICT TDD MODE ACTIVO desde aquí: cada tarea de implementación trae su test RED antes del GREEN.
+strict_tdd: true
+
+testing:
+  test_runner: pytest
+  unit: pytest
+  integration: pytest
+  e2e: manual               # smoke E2E documentado en docs/smoke-e2e.md (Fase 11)
+  coverage: pytest-cov
+  linter: ruff
+  type_checker: mypy
+  formatter: ruff format
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+    - Toda decisión debe trazar hasta un axioma de core/Claude (filosofía ADR del proyecto)
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - Cada decisión de diseño referencia su nodo padre en el grafo ADR
+  tasks:
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+    - La primera fase de tareas debe instalar pytest+ruff y activar strict_tdd
+  apply:
+    - Follow existing code patterns and conventions
+    - Legibilidad > concisión; extensibilidad cuando una segunda implementación la justifique
+  verify:
+    - Run tests if test infrastructure exists
+    - Compare implementation against every spec scenario
+  archive:
+    - Warn before merging destructive deltas (large removals)

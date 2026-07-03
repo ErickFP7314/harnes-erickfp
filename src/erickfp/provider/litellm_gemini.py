@@ -1,0 +1,175 @@
+"""provider/litellm_gemini.py -- adapter LiteLLM hacia Gemini (Decision 2 del design).
+
+UNICO modulo del paquete que puede importar `litellm` (regla de frontera de
+Decision 1/2, verificada por tests/test_no_native_sdk_leak.py). Traduce la
+respuesta cruda de LiteLLM a los tipos propios (`Message`/`Block`/`Response`)
+y preserva la thought signature de Gemini 3 entre turnos.
+
+Mecanismo de thought signature (spike 2.1, docs/spikes/thought-signature.md,
+analisis estatico de litellm==1.83.7 -- validacion empirica pendiente de una
+GEMINI_API_KEY nueva, la actual esta revocada por Google):
+- Con tool_use: litellm embebe la firma dentro del campo `id` del tool_call
+  devuelto (separador `__thought__`). Basta con reenviar ese mismo id intacto
+  en el turno siguiente para que litellm reconstruya `thoughtSignature` en el
+  payload saliente a Gemini.
+- Sin tool_use (solo texto): la firma viaja en
+  `message.provider_specific_fields["thought_signatures"]`.
+El agent loop trata `Block.provider_metadata` como bytes opacos; solo este
+adapter lee/escribe su contenido.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import litellm
+
+from erickfp.api.types import Block, Message, Response, ToolDef
+
+# TODO-ADR: alias provisional. El spike 2.1 (docs/spikes/thought-signature.md)
+# quedo bloqueado por una GEMINI_API_KEY reportada como filtrada por Google
+# (403 "reported as leaked" en 3 de los 4 alias probados) antes de poder
+# confirmar empiricamente cual de los alias mapeados por litellm 1.83.7
+# (`-preview`, `flash-latest`, `3.5-flash`) es el correcto para "Gemini 3
+# Flash". Se elige `-preview` por ser el nombre mas cercano al literal citado
+# en design.md/tasks.md. El ADR de modelo default se cierra recien cuando el
+# spike corra con una key nueva y valida (ver tasks.md 2.1/4.4).
+DEFAULT_MODEL = "gemini/gemini-3-flash-preview"
+
+# Separador documentado en litellm/litellm_core_utils/prompt_templates/factory.py:64.
+THOUGHT_SIGNATURE_SEPARATOR = "__thought__"
+
+
+class LiteLLMGeminiProvider:
+    """Adapter `Provider` (Decision 5) que traduce hacia/desde LiteLLM + Gemini."""
+
+    def __init__(self, model_name: str = DEFAULT_MODEL) -> None:
+        self._model_name = model_name
+
+    def model(self) -> str:
+        return self._model_name
+
+    def set_model(self, name: str) -> None:
+        self._model_name = name
+
+    def send(self, messages: list[Message], tools: list[ToolDef]) -> Response:
+        payload_messages: list[dict[str, Any]] = []
+        for message in messages:
+            payload_messages.extend(self._to_litellm_messages(message))
+
+        payload_tools = [self._to_litellm_tool(tool) for tool in tools] if tools else None
+
+        raw = litellm.completion(
+            model=self._model_name,
+            messages=payload_messages,
+            tools=payload_tools,
+        )
+        return self._to_response(raw)
+
+    # -- traduccion hacia LiteLLM --------------------------------------------
+
+    def _to_litellm_messages(self, message: Message) -> list[dict[str, Any]]:
+        if message.role == "assistant":
+            return [self._assistant_message(message)]
+        return self._user_message(message)
+
+    def _assistant_message(self, message: Message) -> dict[str, Any]:
+        text_parts = [
+            block.text for block in message.content if block.type == "text" and block.text
+        ]
+        tool_use_blocks = [block for block in message.content if block.type == "tool_use"]
+
+        entry: dict[str, Any] = {
+            "role": "assistant",
+            "content": "\n".join(text_parts) if text_parts else None,
+        }
+        if tool_use_blocks:
+            entry["tool_calls"] = [
+                {
+                    # Reenviar el id crudo (con __thought__ si litellm lo
+                    # embebio) es lo que permite el round-trip de la firma.
+                    "id": block.provider_metadata.get("raw_tool_call_id", block.tool_use_id),
+                    "type": "function",
+                    "function": {"name": block.tool_name, "arguments": block.tool_input},
+                }
+                for block in tool_use_blocks
+            ]
+
+        thought_signatures = next(
+            (
+                block.provider_metadata["thought_signatures"]
+                for block in message.content
+                if block.provider_metadata.get("thought_signatures")
+            ),
+            None,
+        )
+        if thought_signatures:
+            entry["provider_specific_fields"] = {"thought_signatures": thought_signatures}
+
+        return entry
+
+    def _user_message(self, message: Message) -> list[dict[str, Any]]:
+        tool_results = [block for block in message.content if block.type == "tool_result"]
+        if tool_results:
+            return [
+                {
+                    "role": "tool",
+                    "tool_call_id": block.tool_use_id,
+                    "content": block.tool_result,
+                }
+                for block in tool_results
+            ]
+
+        text_parts = [block.text for block in message.content if block.type == "text"]
+        return [{"role": "user", "content": "\n".join(text_parts)}]
+
+    def _to_litellm_tool(self, tool: ToolDef) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.input_schema,
+            },
+        }
+
+    # -- traduccion desde LiteLLM ---------------------------------------------
+
+    def _to_response(self, raw: Any) -> Response:
+        choice = raw.choices[0]
+        message = choice.message
+        blocks: list[Block] = []
+
+        text = getattr(message, "content", None)
+        if text:
+            blocks.append(Block(type="text", text=text))
+
+        tool_calls = getattr(message, "tool_calls", None) or []
+        for call in tool_calls:
+            call_id = call.id
+            blocks.append(
+                Block(
+                    type="tool_use",
+                    tool_use_id=call_id,
+                    tool_name=call.function.name,
+                    tool_input=call.function.arguments,
+                    provider_metadata={"raw_tool_call_id": call_id},
+                )
+            )
+
+        provider_specific = getattr(message, "provider_specific_fields", None) or {}
+        thought_signatures = (
+            provider_specific.get("thought_signatures")
+            if isinstance(provider_specific, dict)
+            else None
+        )
+        if thought_signatures and not tool_calls:
+            if blocks:
+                blocks[0].provider_metadata["thought_signatures"] = thought_signatures
+            else:
+                blocks.append(
+                    Block(type="text", provider_metadata={"thought_signatures": thought_signatures})
+                )
+
+        stop_reason = getattr(choice, "finish_reason", None) or "end_turn"
+        return Response(content=blocks, stop_reason=stop_reason)
