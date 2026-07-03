@@ -45,21 +45,21 @@ Strict TDD activo desde la Fase 1: cada tarea de implementación indica su test 
 
 ## Fase 6: Permission gate + Agent loop (riesgo alto: gate sin fuga)
 
-- [ ] 6.1 RED (nombrado): `test_gate_denies_by_default_on_empty_or_invalid_input` — Enter vacío o texto distinto de "y"/"n" → deny.
-- [ ] 6.2 RED (nombrado): `test_gate_approves_only_on_explicit_y` — solo "y" ejecuta la tool real.
-- [ ] 6.3 RED (nombrado): `test_gate_denial_produces_tool_result_is_error_true_no_exception` — "n" produce `tool_result(is_error=true)` sin lanzar excepción.
-- [ ] 6.4 GREEN: crear `src/erickfp/agent/gate.py` (consume `input()` según patrón validado en spike 2.3).
-- [ ] 6.5 RED: `tests/agent/test_loop.py::test_no_tool_use_skips_gate` — turno solo texto no invoca el gate.
-- [ ] 6.6 RED (nombrado): `test_every_tool_use_passes_through_gate_no_direct_path` — todo `tool_use` pasa por el gate antes de `execute()`, sin ruta alternativa.
-- [ ] 6.7 GREEN: crear `src/erickfp/agent/loop.py` (loop hasta `stop_reason=end_turn`, probado con `MockProvider`).
+- [x] 6.1 RED (nombrado): `test_gate_denies_by_default_on_empty_or_invalid_input` — Enter vacío o texto distinto de "y"/"n" → deny.
+- [x] 6.2 RED (nombrado): `test_gate_approves_only_on_explicit_y` — solo "y" ejecuta la tool real.
+- [x] 6.3 RED (nombrado): `test_gate_denial_produces_tool_result_is_error_true_no_exception` — "n" produce `tool_result(is_error=true)` sin lanzar excepción.
+- [x] 6.4 GREEN: crear `src/erickfp/agent/gate.py` (consume `input()` según patrón validado en spike 2.3).
+- [x] 6.5 RED: `tests/agent/test_loop.py::test_no_tool_use_skips_gate` — turno solo texto no invoca el gate.
+- [x] 6.6 RED (nombrado): `test_every_tool_use_passes_through_gate_no_direct_path` — todo `tool_use` pasa por el gate antes de `execute()`, sin ruta alternativa.
+- [x] 6.7 GREEN: crear `src/erickfp/agent/loop.py` (loop hasta `stop_reason=end_turn`, probado con `MockProvider`).
 
 ## Fase 7: CLI `init` + `chat`
 
-- [ ] 7.1 RED: `tests/cli/test_init.py::test_first_init_creates_full_tree` — crea `.ErickFP/{core/Claude,core/agents,adr/,memory/,hooks/}` con plantillas no vacías (`tmp_path`).
-- [ ] 7.2 RED: `tests/cli/test_init.py::test_reinit_does_not_overwrite_core_without_confirmation` — re-init no sobrescribe `core/Claude`/`core/agents` sin confirmación explícita; informa rutas existentes vs. creadas.
-- [ ] 7.3 GREEN: crear `src/erickfp/cli.py` con comando `init` (Typer) + plantillas raíz en `src/erickfp/templates/`.
-- [ ] 7.4 RED: `tests/cli/test_chat.py::test_preamble_loaded_before_first_turn` — `Store.preamble()` (mock) se incluye en el contexto antes del primer turno.
-- [ ] 7.5 GREEN: agregar comando `chat` a `cli.py`, cableando Provider real + agent loop + gate + tool registry. Slug de fase (`slug-objetivo`) = slugify del argumento CLI (resuelve pregunta abierta del design).
+- [x] 7.1 RED: `tests/cli/test_init.py::test_first_init_creates_full_tree` — crea `.ErickFP/{core/Claude,core/agents,adr/,memory/,hooks/}` con plantillas no vacías (`tmp_path`).
+- [x] 7.2 RED: `tests/cli/test_init.py::test_reinit_does_not_overwrite_core_without_confirmation` — re-init no sobrescribe `core/Claude`/`core/agents` sin confirmación explícita; informa rutas existentes vs. creadas.
+- [x] 7.3 GREEN: crear `src/erickfp/cli.py` con comando `init` (Typer) + plantillas raíz en `src/erickfp/templates/`.
+- [x] 7.4 RED: `tests/cli/test_chat.py::test_preamble_loaded_before_first_turn` — `Store.preamble()` (mock) se incluye en el contexto antes del primer turno.
+- [x] 7.5 GREEN: agregar comando `chat` a `cli.py`, cableando Provider real + agent loop + gate + tool registry. Slug de fase (`slug-objetivo`) = slugify del argumento CLI (resuelve pregunta abierta del design).
 
 ## Fase 8: Phase hooks (riesgo alto: fuga en protección de `core/*`)
 

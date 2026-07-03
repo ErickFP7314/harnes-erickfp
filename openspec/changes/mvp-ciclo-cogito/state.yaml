@@ -29,8 +29,8 @@ phases:
   apply:
     status: in_progress
     depends_on: [tasks]
-    lote_actual: 2
-    lotes_completados: [1, 2]
+    lote_actual: 3
+    lotes_completados: [1, 2, 3]
     artifact: openspec/changes/mvp-ciclo-cogito/tasks.md
     engram: sdd/mvp-ciclo-cogito/apply-progress
     nota: >
@@ -47,8 +47,22 @@ phases:
       queda como constante provisional DEFAULT_MODEL =
       "gemini/gemini-3-flash-preview" con TODO-ADR (no llamadas reales, key
       sigue revocada) -- pendiente de cierre empirico cuando el spike 2.1
-      corra con key nueva. Siguiente lote sugerido: Fase 6 (Permission gate +
-      Agent loop, riesgo alto) en adelante.
+      corra con key nueva.
+      Lote 3 = Fases 6-7 (Permission gate + Agent loop, CLI init/chat)
+      COMPLETAS (12/12 tareas), Strict TDD real. 66/66 tests en verde, ruff y
+      mypy limpios sobre src/erickfp + tests/ (scripts/spike_thought_signature.py
+      mantiene 6 E501 preexistentes de Lote 1, fuera de scope). Gate sin fuga
+      verificado (deny por defecto, solo "y" exacto aprueba, negacion nunca
+      lanza excepcion, todo tool_use pasa por run_tool_with_gate sin ruta
+      directa). chat() lee core/Claude + core/agents/*.md + Store.preamble()
+      antes del primer turno via build_system_context(); Store real
+      (SqliteStore, Fase 9) aun no existe -- se usa _NullStore de relleno
+      (preamble vacio) mas un Protocol PreambleSource local en cli.py,
+      documentado como TODO-Fase9. Slug-objetivo (slugify) queda como
+      decision registrada, no implementada aun (sin consumidor: los comandos
+      duda/divide/ordena/enumera son de Fase 10 y cogito/ no puede importar
+      cli.py). Siguiente lote sugerido: Fase 8 (Phase hooks, riesgo alto) en
+      adelante.
   verify:
     status: pending
     depends_on: [apply]
