@@ -25,7 +25,7 @@ El sistema MUST definir tipos propios (`Message`, `Block`, `ToolDef`, `Response`
 
 ### Requirement: Adapter LiteLLM hacia Gemini con continuidad de razonamiento
 
-El adapter default MUST usar LiteLLM con `gemini/gemma-4-26b-a4b-it` como modelo default (ADR-001, decisión del usuario 2026-07-03 con evidencia empírica del spike 2.1; el literal original `gemini/gemini-3-flash` no está mapeado en litellm 1.83.7), MUST permitir configurar otro modelo vía `set_model()`/constructor, y MUST preservar las thought signatures del modelo a través de turnos múltiples.
+El adapter default MUST usar LiteLLM con `gemini/gemma-4-26b-a4b-it` como modelo default (ADR-001, decisión del usuario 2026-07-03 con evidencia empírica del spike 2.1), MUST permitir configurar otro modelo vía `set_model()`/constructor, y MUST preservar las thought signatures del modelo a través de turnos múltiples.
 
 #### Scenario: Multi-turno preserva thought signature
 

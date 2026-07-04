@@ -3,3 +3,4 @@ byo-coding-agent/
 __pycache__/
 .venv/
 *.pyc
+.codegraph/

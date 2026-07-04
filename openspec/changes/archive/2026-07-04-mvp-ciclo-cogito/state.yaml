@@ -1,0 +1,64 @@
+schema: spec-driven
+change: mvp-ciclo-cogito
+created: 2026-07-03
+archived: 2026-07-04
+artifact_store: hybrid
+execution_mode: interactive
+
+phases:
+  explore:
+    status: done
+    artifact: engram:sdd/mvp-ciclo-cogito/explore
+  propose:
+    status: done
+    artifact: openspec/changes/archive/2026-07-04-mvp-ciclo-cogito/proposal.md
+    engram: sdd/mvp-ciclo-cogito/proposal
+  spec:
+    status: done
+    artifact: openspec/changes/archive/2026-07-04-mvp-ciclo-cogito/specs/
+    engram: sdd/mvp-ciclo-cogito/spec
+  design:
+    status: done
+    depends_on: [propose]
+    artifact: openspec/changes/archive/2026-07-04-mvp-ciclo-cogito/design.md
+    engram: sdd/mvp-ciclo-cogito/design
+  tasks:
+    status: done
+    depends_on: [spec, design]
+    artifact: openspec/changes/archive/2026-07-04-mvp-ciclo-cogito/tasks.md
+    engram: sdd/mvp-ciclo-cogito/tasks
+  apply:
+    status: done
+    depends_on: [tasks]
+    lote_actual: 5
+    lotes_completados: [1, 2, 3, 4, 5]
+    artifact: openspec/changes/archive/2026-07-04-mvp-ciclo-cogito/tasks.md
+    engram: sdd/mvp-ciclo-cogito/apply-progress
+  verify:
+    status: done
+    depends_on: [apply]
+    artifact: openspec/changes/archive/2026-07-04-mvp-ciclo-cogito/verify-report.md
+    engram: sdd/mvp-ciclo-cogito/verify-report
+    resultado: PASS WITH WARNINGS
+  archive:
+    status: done
+    depends_on: [verify]
+    artifact: openspec/changes/archive/2026-07-04-mvp-ciclo-cogito/archive-report.md
+    engram: sdd/mvp-ciclo-cogito/archive-report
+    archived_at: 2026-07-04
+    merged_specs: true
+    warnings_fixed: 1
+
+capabilities:
+  new:
+    - cli-init
+    - agent-loop
+    - provider-layer
+    - tool-registry
+    - ciclo-cogito
+    - phase-hooks
+    - memory-store
+  modified: []
+
+next_ready: []
+cycle_complete: true
