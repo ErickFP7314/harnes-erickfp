@@ -106,8 +106,23 @@ phases:
       agent en las capas de pyproject.toml. CAMBIO COMPLETO -- siguiente fase:
       verify.
   verify:
-    status: pending
+    status: done
     depends_on: [apply]
+    artifact: openspec/changes/mvp-ciclo-cogito/verify-report.md
+    engram: sdd/mvp-ciclo-cogito/verify-report
+    resultado: PASS WITH WARNINGS
+    nota: >
+      0 CRITICAL, 1 WARNING, 3 SUGGESTIONS. 126/126 tests reales (pytest),
+      ruff/mypy/lint-imports limpios, cobertura 95% (umbral 85%). 28/29
+      escenarios de las 7 specs COMPLIANT (con test real que pasa), 1/29
+      PARTIAL: specs/provider-layer/spec.md no refleja ADR-001 (modelo
+      default real es gemini/gemma-4-26b-a4b-it, la spec sigue con el
+      literal gemini/gemini-3-flash) -- fix recomendado antes de fusionar
+      specs en el archive, no bloqueante. Los 2 riesgos altos (gate sin
+      fuga, proteccion core/*) verificados exhaustivamente, incluyendo
+      paths equivalentes (relativos/../symlinks) resueltos con
+      Path.resolve(). Los 7 criterios de exito de proposal.md confirmados
+      con evidencia real de ejecucion.
   archive:
     status: pending
     depends_on: [verify]
@@ -124,4 +139,4 @@ capabilities:
   modified: []
 
 next_ready:
-  - verify
+  - archive
