@@ -27,10 +27,10 @@ phases:
     artifact: openspec/changes/mvp-ciclo-cogito/tasks.md
     engram: sdd/mvp-ciclo-cogito/tasks
   apply:
-    status: in_progress
+    status: done
     depends_on: [tasks]
-    lote_actual: 4
-    lotes_completados: [1, 2, 3, 4]
+    lote_actual: 5
+    lotes_completados: [1, 2, 3, 4, 5]
     artifact: openspec/changes/mvp-ciclo-cogito/tasks.md
     engram: sdd/mvp-ciclo-cogito/apply-progress
     nota: >
@@ -81,8 +81,30 @@ phases:
       documentada: adr_graph.py vive en hooks/ (no cogito/adr.py como decia
       el design) por el contrato import-linter ya vigente (hooks no puede
       depender de cogito); pyproject.toml actualizado con capa erickfp.agent
-      + dependencia pyyaml/types-PyYAML. Siguiente lote sugerido: Fase 10
-      (Ciclo Cogito integrador) en adelante.
+      + dependencia pyyaml/types-PyYAML.
+      Lote 5 (FINAL) = Fases 10-11 (Ciclo Cogito integrador + integracion
+      final) COMPLETAS (16/16 tareas: 44/44 tareas totales del cambio).
+      Strict TDD real. 126/126 tests en verde, ruff/mypy/lint-imports
+      limpios sobre TODO el repo (scripts/ excluido del linting por decision
+      explicita, tarea 11.6). Fase 10: cogito/{artifacts,phases,orchestrator}.py
+      + comandos duda/divide/ordena/enumera en cli.py; protocolo de
+      marcadores ACEPTADO:/AMBIGUO: para que duda declare ambiguedad;
+      HookManager (CoreGuardHook+AdrTraceabilityHook) instanciado por primera
+      vez en produccion real (antes solo probado aislado); PhaseContext
+      compartido durante toda la cadena para que constraints se acumule.
+      Fase 11: test_architecture_import_rules.py valida el contrato
+      import-linter completo por primera vez (antes fallaba con "Missing
+      layer erickfp.cogito"); retry con backoff (11.5) ante 500/INTERNAL en
+      litellm_gemini.py verificado con evidencia REAL en el smoke E2E (11.3);
+      smoke E2E manual documentado en docs/smoke-e2e.md (erickfp init +
+      duda + chat contra gemini/gemma-4-26b-a4b-it real, API key nunca
+      impresa; 2 intentos con 500 transitorio real del proveedor, exito tras
+      esperar 15s); openspec/config.yaml actualizado con verify.test_command
+      y coverage_threshold:85 (95% real medido). Deviacion: cogito/phases.py
+      depende de erickfp.agent (no listado en el arbol de Decision 1),
+      permitido sin tocar el contrato porque cogito ya esta por encima de
+      agent en las capas de pyproject.toml. CAMBIO COMPLETO -- siguiente fase:
+      verify.
   verify:
     status: pending
     depends_on: [apply]
@@ -102,4 +124,4 @@ capabilities:
   modified: []
 
 next_ready:
-  - apply
+  - verify

@@ -1,11 +1,12 @@
 """cli.py -- entrypoint Typer (glue arriba, Decision 1 del design: `cli.py`
 depende de todo lo demas y NADA depende de `cli.py`).
 
-Comandos del MVP: `init` (scaffolding de `.ErickFP/`, spec cli-init) y
-`chat` (REPL agentico, spec agent-loop). Los comandos `duda`/`divide`/
-`ordena`/`enumera` del Ciclo Cogito se cablean en Fase 10 (orquestador).
-Este modulo es el UNICO lugar donde la logica se conecta con la interfaz de
-usuario -- ningun otro modulo del paquete debe importar `typer`/`rich`.
+Comandos del MVP: `init` (scaffolding de `.ErickFP/`, spec cli-init), `chat`
+(REPL agentico, spec agent-loop) y `duda`/`divide`/`ordena`/`enumera` (Ciclo
+Cogito, spec ciclo-cogito, Fase 10) -- estos ultimos reutilizan
+`CicloCogitoOrchestrator`. Este modulo es el UNICO lugar donde la logica se
+conecta con la interfaz de usuario -- ningun otro modulo del paquete debe
+importar `typer`/`rich`.
 
 Tema de color (preferencia del usuario): cyan primario (banner, prompts,
 nombres de fase), verde acento (exitos/aprobaciones), rojo estandar para
@@ -15,6 +16,8 @@ terminales.
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
@@ -25,6 +28,11 @@ from rich.console import Console
 from erickfp.agent.gate import read_line as gate_read_line
 from erickfp.agent.loop import run_turn
 from erickfp.api.types import Block, Message
+from erickfp.cogito.artifacts import ArtifactMissingError
+from erickfp.cogito.orchestrator import CicloCogitoOrchestrator, PhaseBlockedError, PhaseOutcome
+from erickfp.hooks.adr_traceability import AdrTraceabilityHook
+from erickfp.hooks.core_guard import CoreGuardHook
+from erickfp.hooks.manager import HookManager, PhaseContext
 from erickfp.memory.sqlite_store import SqliteStore
 from erickfp.provider.base import Provider
 from erickfp.provider.litellm_gemini import LiteLLMGeminiProvider
@@ -42,6 +50,7 @@ console = Console(highlight=False)
 _ROOT_DIR_NAME = ".ErickFP"
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 _CORE_ROLE_FILES = ("planner.md", "coder.md", "reviewer.md")
+_CORE_AGENT_ROLES = ("planner", "coder", "reviewer")
 _EXIT_COMMANDS = {"salir", "exit", "quit"}
 
 
@@ -199,3 +208,120 @@ def chat() -> None:
         run_chat_session(provider, tool_registry, console, system_context)
     except EOFError:
         console.print(f"\n[{_CYAN}]Hasta luego.[/{_CYAN}]")
+
+
+# -- Ciclo Cogito (duda/divide/ordena/enumera) -------------------------------
+
+
+def _slugify(text: str) -> str:
+    """Convierte `text` en un slug ascii-kebab-case (decision registrada en
+    Lote 3/tarea 7.5, implementada aqui en la Fase 10: `cogito/` no puede
+    importar `cli.py` por la regla de dependencia -- Decision 1 -- y esta
+    funcion es exclusiva de la interfaz de usuario)."""
+    normalized = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", normalized).strip("-").lower()
+    return slug or "objetivo"
+
+
+def _load_role_prompt(root: Path, role: str) -> str:
+    """Contexto de sistema de UN solo rol (a diferencia de
+    `build_system_context`, que concatena los 3 roles para `chat`): axiomas
+    de `core/Claude` + el archivo especifico de `core/agents/{role}.md`
+    (Decision 4 del design: duda/divide -> Planner, ordena -> Coder,
+    enumera -> Reviewer)."""
+    claude_text = _read_or_empty(root / "core" / "Claude")
+    role_text = _read_or_empty(root / "core" / "agents" / f"{role}.md")
+    return "\n\n---\n\n".join(part for part in (claude_text, role_text) if part)
+
+
+def _build_orchestrator(root: Path) -> CicloCogitoOrchestrator:
+    role_prompts = {role: _load_role_prompt(root, role) for role in _CORE_AGENT_ROLES}
+    hook_manager = HookManager([CoreGuardHook(root), AdrTraceabilityHook(root)])
+    provider = LiteLLMGeminiProvider()
+    store = SqliteStore(root=root)
+    return CicloCogitoOrchestrator(
+        root=root,
+        provider=provider,
+        tools=tool_registry,
+        hook_manager=hook_manager,
+        role_prompts=role_prompts,
+        store=store,
+    )
+
+
+def _require_root() -> Path:
+    root = Path.cwd() / _ROOT_DIR_NAME
+    if not root.is_dir():
+        console.print(f"[{_RED}]No se encontro {root}. Corre 'erickfp init' primero.[/{_RED}]")
+        raise typer.Exit(code=1)
+    return root
+
+
+def _print_outcome(outcome: PhaseOutcome) -> None:
+    if outcome.status == "clarification":
+        console.print(
+            f"[{_RED}]{outcome.phase}[/{_RED}] pide clarificacion, no genero artefacto:\n"
+            f"{outcome.content}"
+        )
+    else:
+        console.print(f"[{_GREEN}]{outcome.phase}[/{_GREEN}] artefacto generado en {outcome.path}")
+
+
+@app.command()
+def duda(objetivo: str) -> None:
+    """Fase 'duda' (Evidencia, spec ciclo-cogito): somete `objetivo` a duda
+    metodica. Si es ambiguo, pide clarificacion en vez de generar artefacto."""
+    root = _require_root()
+    slug = _slugify(objetivo)
+    orchestrator = _build_orchestrator(root)
+
+    try:
+        outcome = orchestrator.run_phase(
+            "duda", slug, PhaseContext(phase="duda"), objetivo=objetivo
+        )
+    except PhaseBlockedError as exc:
+        console.print(f"[{_RED}]{exc}[/{_RED}]")
+        raise typer.Exit(code=1) from exc
+
+    _print_outcome(outcome)
+    console.print(f"[{_CYAN}]slug: {slug}[/{_CYAN}]")
+
+
+def _run_single_phase_command(phase: str, slug: str) -> None:
+    """Cablea `divide`/`ordena`/`enumera`: cada una exige el artefacto de la
+    fase previa (Requirement 'Fases secuenciales bloqueantes', spec
+    ciclo-cogito) y falla limpiamente -- sin crashear -- si falta."""
+    root = _require_root()
+    orchestrator = _build_orchestrator(root)
+
+    try:
+        outcome = orchestrator.run_phase(phase, slug, PhaseContext(phase=phase))
+    except ArtifactMissingError as exc:
+        console.print(f"[{_RED}]{exc}[/{_RED}]")
+        raise typer.Exit(code=1) from exc
+    except PhaseBlockedError as exc:
+        console.print(f"[{_RED}]{exc}[/{_RED}]")
+        raise typer.Exit(code=1) from exc
+
+    _print_outcome(outcome)
+
+
+@app.command()
+def divide(slug: str) -> None:
+    """Fase 'divide' (Analisis, spec ciclo-cogito): descompone el objetivo
+    validado por `duda` en sus partes minimas."""
+    _run_single_phase_command("divide", slug)
+
+
+@app.command()
+def ordena(slug: str) -> None:
+    """Fase 'ordena' (Sintesis, spec ciclo-cogito): sintetiza segun el plan
+    de `divide`, trazable a un ADR raiz (`adr_traceability`)."""
+    _run_single_phase_command("ordena", slug)
+
+
+@app.command()
+def enumera(slug: str) -> None:
+    """Fase 'enumera' (Revision, spec ciclo-cogito): revisa y enumera los
+    resultados de `ordena`."""
+    _run_single_phase_command("enumera", slug)

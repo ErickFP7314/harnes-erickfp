@@ -16,10 +16,20 @@ GEMINI_API_KEY nueva, la actual esta revocada por Google):
   `message.provider_specific_fields["thought_signatures"]`.
 El agent loop trata `Block.provider_metadata` como bytes opacos; solo este
 adapter lee/escribe su contenido.
+
+Retry con backoff ante `500`/`INTERNAL` transitorios (Fase 11, tarea 11.5;
+hallazgo del spike 2.2, docs/spikes/free-tier-limits.md: con Gemma 4, 1 de 11
+llamadas reales consecutivas fallo con un 500 esporadico del servidor, sin
+relacion con la cuota). Extiende el patron ya usado en
+`scripts/spike_thought_signature.py::_call_with_backoff` (alli para 429) a
+estos errores: UN solo reintento acotado, nunca se silencia un fallo real
+distinto ni un segundo 500 consecutivo.
 """
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from typing import Any
 
 import litellm
@@ -37,12 +47,25 @@ DEFAULT_MODEL = "gemini/gemma-4-26b-a4b-it"
 # Separador documentado en litellm/litellm_core_utils/prompt_templates/factory.py:64.
 THOUGHT_SIGNATURE_SEPARATOR = "__thought__"
 
+# Reintento ACOTADO: 1 llamada real + a lo sumo 1 reintento (2 intentos en
+# total) ante 500/INTERNAL transitorios (spike 2.2). Cualquier otro error, o
+# un segundo 500 consecutivo, se propaga tal cual -- nunca se silencia un
+# fallo real.
+_MAX_ATTEMPTS = 2
+_BACKOFF_SECONDS = 2.0
+_TRANSIENT_ERROR_MARKERS = ("500", "INTERNAL")
+
 
 class LiteLLMGeminiProvider:
     """Adapter `Provider` (Decision 5) que traduce hacia/desde LiteLLM + Gemini."""
 
-    def __init__(self, model_name: str = DEFAULT_MODEL) -> None:
+    def __init__(
+        self,
+        model_name: str = DEFAULT_MODEL,
+        sleep_fn: Callable[[float], None] = time.sleep,
+    ) -> None:
         self._model_name = model_name
+        self._sleep_fn = sleep_fn
 
     def model(self) -> str:
         return self._model_name
@@ -57,12 +80,28 @@ class LiteLLMGeminiProvider:
 
         payload_tools = [self._to_litellm_tool(tool) for tool in tools] if tools else None
 
-        raw = litellm.completion(
+        raw = self._call_with_backoff(
             model=self._model_name,
             messages=payload_messages,
             tools=payload_tools,
         )
         return self._to_response(raw)
+
+    def _call_with_backoff(self, **kwargs: Any) -> Any:
+        """Llama a `litellm.completion` con hasta `_MAX_ATTEMPTS` intentos:
+        reintenta UNA vez, tras `_BACKOFF_SECONDS` de espera, solo si el error
+        es transitorio (`500`/`INTERNAL` en el mensaje, spike 2.2). Cualquier
+        otro error -- o un segundo error transitorio -- se relanza tal cual."""
+        for attempt in range(_MAX_ATTEMPTS):
+            try:
+                return litellm.completion(**kwargs)
+            except Exception as exc:
+                is_transient = any(marker in str(exc) for marker in _TRANSIENT_ERROR_MARKERS)
+                is_last_attempt = attempt == _MAX_ATTEMPTS - 1
+                if not is_transient or is_last_attempt:
+                    raise
+                self._sleep_fn(_BACKOFF_SECONDS)
+        raise AssertionError("inalcanzable: el loop siempre retorna o relanza")  # pragma: no cover
 
     # -- traduccion hacia LiteLLM --------------------------------------------
 

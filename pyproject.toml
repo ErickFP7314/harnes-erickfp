@@ -38,6 +38,10 @@ addopts = "-ra"
 [tool.ruff]
 line-length = 100
 src = ["src"]
+# scripts/ contiene spikes exploratorios de un solo uso (Fase 2), no codigo de
+# produccion -- excluirlo del linting evita mantener limpieza cosmetica sobre
+# codigo desechable (decision menor, tarea 11.6, pendiente desde Lote 2).
+extend-exclude = ["scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -61,6 +65,15 @@ disallow_untyped_defs = false
 # PostToolUse); sin esta capa el contrato quedaria desactualizado respecto al
 # codigo real. `agent` se ubica entre `cogito` y `hooks|tools|provider|memory`
 # porque depende de esas capas (via gate.py/loop.py) pero aun no de `cogito`.
+#
+# Nota (Fase 10, Lote 5): `erickfp.cogito` (creado en esta fase) depende
+# ademas de `erickfp.agent` (`cogito/phases.py` invoca `agent.loop.run_turn`
+# para ejecutar el turno de cada fase) -- dependencia real no listada en el
+# arbol de Decision 1 (que solo enumera `cogito -> api,provider,tools,hooks,
+# memory`), consistente con la "Secuencia" del design ("agent loop (send
+# preserva provider_metadata)" como parte explicita de cada fase). Como
+# `cogito` ya esta ubicado POR ENCIMA de `agent` en este mismo contrato, la
+# dependencia queda permitida sin modificar la lista de capas.
 [tool.importlinter]
 root_package = "erickfp"
 

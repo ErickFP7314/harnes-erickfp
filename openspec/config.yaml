@@ -24,6 +24,15 @@ testing:
   type_checker: mypy
   formatter: ruff format
 
+# Fase 11 (tarea 11.4): comando de verificación y umbral de cobertura
+# acordados al cierre del MVP. 95% real medido con `pytest --cov=erickfp`
+# (126 tests, 731 stmts/37 miss) al cerrar la Fase 11 -- 85% deja margen
+# deliberado para código futuro no cubierto (p.ej. ramas de error de I/O)
+# sin exigir 100% artificial.
+verify:
+  test_command: pytest
+  coverage_threshold: 85
+
 rules:
   proposal:
     - Include rollback plan for risky changes
