@@ -14,10 +14,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from rich.panel import Panel
+from typer.testing import CliRunner
+
+import erickfp.cli as cli_module
 from erickfp.api.types import Block, Response
-from erickfp.cli import build_system_context, run_chat_session
+from erickfp.cli import app, build_system_context, run_chat_session
 from erickfp.tools.registry import ToolRegistry
 from tests.support import MockProvider
+
+runner = CliRunner()
 
 
 class _MockStore:
@@ -102,3 +108,53 @@ def test_system_context_not_repeated_on_second_turn(tmp_path: Path) -> None:
     newest_text = " ".join(block.text for block in newest_message.content)
     assert "PREAMBLE-DE-PRUEBA" not in newest_text
     assert "segundo turno" in newest_text
+
+
+def test_chat_startup_renders_banner_and_uses_decorated_input(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Lote 1, tarea 1.14 (spec ui-polish): `erickfp chat` renderiza el
+    banner de portada al arranque y pasa un `read_line` decorado (cuadro
+    Rich + `agent.gate.read_line`, unico consumer real de stdin -- spike
+    2.3) a `run_chat_session`, en vez del `gate_read_line` crudo."""
+    monkeypatch.chdir(tmp_path)
+    runner.invoke(app, ["init"])
+
+    printed: list[object] = []
+
+    def _fake_print(*args: object, **kwargs: object) -> None:
+        printed.append(args[0] if args else None)
+
+    monkeypatch.setattr(cli_module.console, "print", _fake_print)
+
+    read_line_calls: list[str] = []
+    monkeypatch.setattr(
+        cli_module, "gate_read_line", lambda prompt: read_line_calls.append(prompt) or "salir"
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_run_chat_session(provider, tools, console, system_context, read_line=None):
+        captured["read_line"] = read_line
+
+    monkeypatch.setattr(cli_module, "run_chat_session", fake_run_chat_session)
+
+    result = runner.invoke(app, ["chat"])
+
+    assert result.exit_code == 0, result.output
+    # El banner (Panel Rich) se renderiza al arranque, antes de entrar al REPL.
+    assert any(isinstance(item, Panel) for item in printed)
+
+    decorated_read_line = captured["read_line"]
+    assert decorated_read_line is not None
+    assert decorated_read_line is not cli_module.gate_read_line
+
+    panels_before = sum(isinstance(item, Panel) for item in printed)
+    result_text = decorated_read_line("tu> ")
+
+    assert result_text == "salir"
+    # `gate_read_line` sigue siendo el UNICO consumer real de stdin.
+    assert read_line_calls == ["tu> "]
+    # El cuadro del prompt (ui.input_frame.frame) se imprimio ademas del banner.
+    panels_after = sum(isinstance(item, Panel) for item in printed)
+    assert panels_after > panels_before

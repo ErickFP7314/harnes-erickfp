@@ -4,21 +4,21 @@ Convención: cada tarea de implementación es RED (test que falla) → GREEN (m�
 
 ## Lote 1 — ui-polish (prioridad 1, pedido explícito del usuario)
 
-- [ ] 1.1 Extender `pyproject.toml [tool.importlinter]` con el contrato COMPLETO (ui, compaction, subagents, y el resto) ANTES de crear código en capas nuevas. Test: `tests/test_architecture_import_rules.py::test_extended_layer_contract_ui_compaction_subagents`
-- [ ] 1.2 GREEN: paquetes placeholder `ui/__init__.py`, `compaction/__init__.py`, `subagents/__init__.py`; lint-imports pasa.
-- [ ] 1.3 RED `scripts/gen_portada.py` parsea `portada.html`→asset Rich. Test: `tests/ui/test_gen_portada.py::test_parses_portada_html_into_rich_text_asset`
-- [ ] 1.4 GREEN: implementar generador; producir `ui/_portada_asset.py` real (exento de lint).
-- [ ] 1.5 RED banner completo si `Console.width>=149`. Test: `tests/ui/test_banner.py::test_wide_terminal_renders_full_banner`
-- [ ] 1.6 GREEN `ui/banner.py::render_banner(console)` con `Panel` + fondo #222222.
-- [ ] 1.7 RED fallback <149 cols sin cortar arte ni error. Test: `tests/ui/test_banner.py::test_narrow_terminal_renders_fallback_panel`
-- [ ] 1.8 GREEN branch de ancho en `render_banner`.
-- [ ] 1.9 RED runtime nunca parsea HTML (introspección de imports). Test: `tests/ui/test_banner.py::test_runtime_never_parses_html`
-- [ ] 1.10 RED input decorado en Panel con bordes tema. Test: `tests/ui/test_input_frame.py::test_decorated_prompt_uses_theme_panel`
-- [ ] 1.11 GREEN `ui/input_frame.py::frame(label)` + composición con `gate.read_line` (consumer único de stdin).
-- [ ] 1.12 RED banner e input comparten paleta (#00FFFF/#00FF00/#222222). Test: `tests/ui/test_theme.py::test_banner_and_input_share_same_palette`
-- [ ] 1.13 GREEN `ui/theme.py` constantes compartidas.
-- [ ] 1.14 Cablear en `cli.py`: banner al arranque de `chat` + `decorated_read_line` como `read_line=` de `run_chat_session`. Test: `tests/cli/test_chat.py::test_chat_startup_renders_banner_and_uses_decorated_input`
-- [ ] 1.15 Suite completa verde (pytest+ruff+mypy+lint-imports) antes de Lote 2.
+- [x] 1.1 Extender `pyproject.toml [tool.importlinter]` con el contrato COMPLETO (ui, compaction, subagents, y el resto) ANTES de crear código en capas nuevas. Test: `tests/test_architecture_import_rules.py::test_extended_layer_contract_ui_compaction_subagents`
+- [x] 1.2 GREEN: paquetes placeholder `ui/__init__.py`, `compaction/__init__.py`, `subagents/__init__.py`; lint-imports pasa.
+- [x] 1.3 RED `scripts/gen_portada.py` parsea `portada.html`→asset Rich. Test: `tests/ui/test_gen_portada.py::test_parses_portada_html_into_rich_text_asset`
+- [x] 1.4 GREEN: implementar generador; producir `ui/_portada_asset.py` real (exento de lint).
+- [x] 1.5 RED banner completo si `Console.width>=149`. Test: `tests/ui/test_banner.py::test_wide_terminal_renders_full_banner`
+- [x] 1.6 GREEN `ui/banner.py::render_banner(console)` con `Panel` + fondo #222222.
+- [x] 1.7 RED fallback <149 cols sin cortar arte ni error. Test: `tests/ui/test_banner.py::test_narrow_terminal_renders_fallback_panel`
+- [x] 1.8 GREEN branch de ancho en `render_banner`.
+- [x] 1.9 RED runtime nunca parsea HTML (introspección de imports). Test: `tests/ui/test_banner.py::test_runtime_never_parses_html`
+- [x] 1.10 RED input decorado en Panel con bordes tema. Test: `tests/ui/test_input_frame.py::test_decorated_prompt_uses_theme_panel`
+- [x] 1.11 GREEN `ui/input_frame.py::frame(label)` + composición con `gate.read_line` (consumer único de stdin).
+- [x] 1.12 RED banner e input comparten paleta (#00FFFF/#00FF00/#222222). Test: `tests/ui/test_theme.py::test_banner_and_input_share_same_palette`
+- [x] 1.13 GREEN `ui/theme.py` constantes compartidas.
+- [x] 1.14 Cablear en `cli.py`: banner al arranque de `chat` + `decorated_read_line` como `read_line=` de `run_chat_session`. Test: `tests/cli/test_chat.py::test_chat_startup_renders_banner_and_uses_decorated_input`
+- [x] 1.15 Suite completa verde (pytest+ruff+mypy+lint-imports) antes de Lote 2.
 
 ## Lote 2 — Robustez/deuda ciclo 1 (retry configurable + 3 SUGGESTIONS)
 

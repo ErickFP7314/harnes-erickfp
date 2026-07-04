@@ -41,7 +41,18 @@ src = ["src"]
 # scripts/ contiene spikes exploratorios de un solo uso (Fase 2), no codigo de
 # produccion -- excluirlo del linting evita mantener limpieza cosmetica sobre
 # codigo desechable (decision menor, tarea 11.6, pendiente desde Lote 2).
-extend-exclude = ["scripts"]
+#
+# `ui/_portada_asset.py` (harness-v0-2, Lote 1, tarea 1.4) es DATOS
+# precomputados por `scripts/gen_portada.py`, no codigo escrito a mano: cada
+# fila del banner (25x149) es una lista literal de segmentos (texto, fg_hex,
+# bg_hex) en una sola linea por fila -- partirla en multiples lineas de
+# <=100 columnas solo para satisfacer E501 fragmentaria la estructura fila<->
+# linea que hace el asset legible/diffable tras cada regeneracion, sin
+# aportar nada (mypy SI lo valida: `mypy src/erickfp` cubre este archivo
+# porque no esta en `mypy_path`/exclude alguno). Exclusion justificada por
+# design.md D3: "el asset generado SI pasa lint/mypy (o se marca con
+# exclusion justificada)".
+extend-exclude = ["scripts", "src/erickfp/ui/_portada_asset.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -74,16 +85,30 @@ disallow_untyped_defs = false
 # preserva provider_metadata)" como parte explicita de cada fase). Como
 # `cogito` ya esta ubicado POR ENCIMA de `agent` en este mismo contrato, la
 # dependencia queda permitida sin modificar la lista de capas.
+#
+# Nota (harness-v0-2, Lote 1, tarea 1.1): contrato extendido (design.md,
+# "Contrato de capas extendido - Decision 1") con 3 capas nuevas: `ui`
+# (misma altura que hooks/tools/provider/memory -- solo depende de `api`,
+# usada por el banner/input decorado de ui-polish), `compaction` (entre
+# `agent` y el resto -- Lote 6, `CompactionStrategy` invocada desde
+# `run_turn`) y `subagents` (POR ENCIMA de `agent` -- Lote 7). El ciclo
+# delegate exige esta ubicacion: `DelegateTool`/`Research` (subagents)
+# construyen un `Agent` (agent) + subset del registry (tools); si vivieran
+# en `tools/`, `tools -> agent` cerraria el ciclo tool->subagent->agent->tool
+# (ver design.md, seccion "Ciclo delegate"). `subagents` se registra desde
+# el composition root (`cli.py`); `tools/` nunca importa `agent`/`subagents`.
 [tool.importlinter]
 root_package = "erickfp"
 
 [[tool.importlinter.contracts]]
-name = "Capas del harness (Decision 1 del design + Fase 8: agent)"
+name = "Capas del harness (Decision 1 del design + Fase 8: agent + harness-v0-2: ui/compaction/subagents)"
 type = "layers"
 layers = [
     "erickfp.cli",
     "erickfp.cogito",
+    "erickfp.subagents",
     "erickfp.agent",
-    "erickfp.hooks | erickfp.tools | erickfp.provider | erickfp.memory",
+    "erickfp.compaction",
+    "erickfp.hooks | erickfp.tools | erickfp.provider | erickfp.memory | erickfp.ui",
     "erickfp.api",
 ]

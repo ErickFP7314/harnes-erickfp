@@ -38,6 +38,8 @@ from erickfp.provider.base import Provider, ProviderError
 from erickfp.provider.litellm_gemini import LiteLLMGeminiProvider
 from erickfp.tools.registry import ToolRegistry
 from erickfp.tools.registry import registry as tool_registry
+from erickfp.ui.banner import render_banner
+from erickfp.ui.input_frame import frame
 
 app = typer.Typer(help="ErickFP -- harness agentico CLI con Ciclo Cogito.")
 
@@ -204,6 +206,16 @@ def run_chat_session(
                 console.print(f"[{_CYAN}]erickfp>[/{_CYAN}] {block.text}")
 
 
+def _decorated_read_line(prompt: str) -> str:
+    """Compone el input decorado (Lote 1, tarea 1.14, spec ui-polish,
+    Requirement 'Input decorado en cuadro'): imprime el cuadro Rich de
+    `ui.input_frame.frame(prompt)` con la paleta del tema y DESPUES lee la
+    linea real con `agent.gate.read_line` -- el UNICO consumer de stdin
+    (spike 2.3) no cambia, solo se decora visualmente lo que lo precede."""
+    console.print(frame(prompt))
+    return gate_read_line(prompt)
+
+
 @app.command()
 def chat() -> None:
     """REPL agentico (spec agent-loop): conecta al Provider LiteLLM/Gemini,
@@ -215,13 +227,16 @@ def chat() -> None:
         )
         raise typer.Exit(code=1)
 
+    render_banner(console)
     console.print(f"[{_CYAN}]ErickFP chat -- Ctrl+D o 'salir' para terminar.[/{_CYAN}]")
 
     system_context = build_system_context(root, SqliteStore(root=root))
     provider = LiteLLMGeminiProvider()
 
     try:
-        run_chat_session(provider, tool_registry, console, system_context)
+        run_chat_session(
+            provider, tool_registry, console, system_context, read_line=_decorated_read_line
+        )
     except EOFError:
         console.print(f"\n[{_CYAN}]Hasta luego.[/{_CYAN}]")
 

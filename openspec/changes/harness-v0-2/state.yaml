@@ -28,8 +28,11 @@ phases:
     artifact: openspec/changes/harness-v0-2/tasks.md
     engram: sdd/harness-v0-2/tasks
   apply:
-    status: pending
+    status: in_progress
     depends_on: [tasks]
+    engram: sdd/harness-v0-2/apply-progress
+    batches_done: [1]
+    next_batch: 2
   verify:
     status: pending
     depends_on: [apply]
@@ -72,4 +75,4 @@ delivery_batches:
   - id: 8
     name: mcp-support
 
-next_recommended: [sdd-apply]
+next_recommended: [sdd-apply]  # Lote 2 (robustez/deuda ciclo1) sigue pendiente

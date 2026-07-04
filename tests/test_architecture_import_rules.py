@@ -19,7 +19,37 @@ import subprocess
 import sys
 from pathlib import Path
 
+import tomllib
+
 _REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# Contrato extendido (Lote 1, tarea 1.1): design.md "Contrato de capas
+# extendido (Decision 1)" agrega `ui`, `compaction`, `subagents` sobre el
+# contrato base de la Fase 11 (`cli -> cogito -> agent -> hooks|tools|
+# provider|memory -> api`). El ciclo delegate (D7: DelegateTool/Research)
+# obliga a ubicar `subagents` POR ENCIMA de `agent` -- ver design.md,
+# seccion "Ciclo delegate" -- y `ui` entra a la MISMA altura que
+# hooks/tools/provider/memory (no depende de nada nuevo, solo de `api`).
+_EXPECTED_LAYERS = [
+    "erickfp.cli",
+    "erickfp.cogito",
+    "erickfp.subagents",
+    "erickfp.agent",
+    "erickfp.compaction",
+    "erickfp.hooks | erickfp.tools | erickfp.provider | erickfp.memory | erickfp.ui",
+    "erickfp.api",
+]
+
+
+def test_extended_layer_contract_ui_compaction_subagents() -> None:
+    """El contrato declarado en `pyproject.toml [[tool.importlinter.contracts]]`
+    debe incluir las capas nuevas `ui`, `compaction`, `subagents` en el orden
+    exacto de design.md -- ANTES de que exista codigo real en esas capas
+    (tarea 1.1 precede a 1.2, que crea los paquetes placeholder)."""
+    pyproject = tomllib.loads((_REPO_ROOT / "pyproject.toml").read_text())
+    contracts = pyproject["tool"]["importlinter"]["contracts"]
+    layers_contract = next(c for c in contracts if c["type"] == "layers")
+    assert layers_contract["layers"] == _EXPECTED_LAYERS
 
 
 def test_lint_imports_contract_passes() -> None:
