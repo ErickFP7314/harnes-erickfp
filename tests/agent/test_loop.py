@@ -70,3 +70,44 @@ def test_every_tool_use_passes_through_gate_no_direct_path(monkeypatch) -> None:
     assert tool.executed_with == []  # jamas se llamo execute() por fuera del gate
     assert result[-1].content[0].text == "listo"
     assert len(provider.sent_messages) == 2  # 2 turnos: tool_use -> tool_result -> end_turn
+
+
+def test_unknown_tool_returns_is_error_result_without_raising(monkeypatch) -> None:
+    """Lote 2, tarea 2.7 (SUGGESTION-1/3 del verify-report de ciclo 1): un
+    `tool_use` cuyo nombre NO esta en el `ToolRegistry` no lanza una
+    excepcion nativa -- produce un `tool_result` con `is_error=True` y un
+    mensaje claro que nombra la tool desconocida, y el loop continua hasta
+    el siguiente `stop_reason != "tool_use"` (nunca por una ruta que invoque
+    `run_tool_with_gate`/`execute()` para esa tool)."""
+    gate_calls: list[str] = []
+    monkeypatch.setattr(
+        "erickfp.agent.loop.run_tool_with_gate",
+        lambda tool, tool_use: gate_calls.append(tool_use.tool_use_id) or Block(
+            type="tool_result"
+        ),
+    )
+
+    first_response = Response(
+        content=[
+            Block(
+                type="tool_use",
+                tool_use_id="call-1",
+                tool_name="tool_que_no_existe",
+                tool_input="{}",
+            )
+        ],
+        stop_reason="tool_use",
+    )
+    second_response = Response(content=[Block(type="text", text="listo")], stop_reason="end_turn")
+    provider = MockProvider(responses=[first_response, second_response])
+    messages = [Message(role="user", content=[Block(type="text", text="hazlo")])]
+
+    result = run_turn(provider, ToolRegistry(), messages, [])
+
+    assert gate_calls == []  # jamas llego al gate: no existe en el registry
+    tool_result = result[-2].content[0]
+    assert tool_result.type == "tool_result"
+    assert tool_result.tool_use_id == "call-1"
+    assert tool_result.is_error is True
+    assert "tool_que_no_existe" in tool_result.tool_result
+    assert result[-1].content[0].text == "listo"  # el loop continua sin crashear

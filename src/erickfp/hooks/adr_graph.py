@@ -50,9 +50,11 @@ def parse_frontmatter(text: str) -> dict[str, Any] | None:
 def load_adr_graph(adr_dir: Path) -> dict[int, dict[str, Any]]:
     """Parsea todos los `*.md` de `adr_dir` y arma `{id: frontmatter}`.
 
-    Archivos sin frontmatter valido o sin campo `id` se ignoran en silencio
-    (p.ej. la plantilla `README.md`, que documenta el formato pero no es un
-    ADR real).
+    Archivos sin frontmatter valido, sin campo `id`, o con un `id` que no es
+    convertible a `int` (Lote 2, tarea 2.12: `int("no-es-un-numero")`
+    lanzaba `ValueError` sin capturar) se ignoran en silencio -- igual que
+    la plantilla `README.md`, que documenta el formato pero no es un ADR
+    real.
     """
     graph: dict[int, dict[str, Any]] = {}
     if not adr_dir.is_dir():
@@ -62,7 +64,11 @@ def load_adr_graph(adr_dir: Path) -> dict[int, dict[str, Any]]:
         frontmatter = parse_frontmatter(path.read_text())
         if frontmatter is None or "id" not in frontmatter:
             continue
-        graph[int(frontmatter["id"])] = frontmatter
+        try:
+            adr_id = int(frontmatter["id"])
+        except (ValueError, TypeError):
+            continue
+        graph[adr_id] = frontmatter
 
     return graph
 

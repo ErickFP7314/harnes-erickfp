@@ -68,7 +68,7 @@ def test_duda_command_creates_artifact_with_fake_provider(tmp_path: Path, monkey
             )
         ]
     )
-    monkeypatch.setattr(cli_module, "LiteLLMGeminiProvider", lambda: fake_provider)
+    monkeypatch.setattr(cli_module, "LiteLLMGeminiProvider", lambda **_kwargs: fake_provider)
 
     result = runner.invoke(app, ["duda", "Objetivo Claro De Prueba"])
 
@@ -90,7 +90,7 @@ def test_duda_command_reports_clarification_without_writing_artifact(
             )
         ]
     )
-    monkeypatch.setattr(cli_module, "LiteLLMGeminiProvider", lambda: fake_provider)
+    monkeypatch.setattr(cli_module, "LiteLLMGeminiProvider", lambda **_kwargs: fake_provider)
 
     result = runner.invoke(app, ["duda", "Objetivo Ambiguo"])
 

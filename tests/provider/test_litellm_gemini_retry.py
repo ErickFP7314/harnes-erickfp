@@ -1,15 +1,16 @@
-"""tests/provider/test_litellm_gemini_retry.py -- retry con backoff acotado
-ante `500 INTERNAL` transitorios (Fase 11, tarea 11.5).
+"""tests/provider/test_litellm_gemini_retry.py -- retry configurable con
+backoff ante errores transitorios (Lote 2, tareas 2.1-2.4, design.md
+Decision 10, specs/provider-layer/spec.md Requirement 'Retry configurable
+con backoff ante errores transitorios').
 
-Hallazgo del spike 2.2 (docs/spikes/free-tier-limits.md): con el modelo del
-ADR-001 (Gemma 4), 1 de 11 llamadas reales consecutivas fallo con un `500
-INTERNAL` esporadico del servidor (no de cuota). Extiende el patron de
-`scripts/spike_thought_signature.py::_call_with_backoff` (ya usado para
-429/rate-limit en el spike) a `500`/`INTERNAL` dentro del adapter real.
+Reemplaza las constantes de modulo `_MAX_ATTEMPTS`/`_BACKOFF_SECONDS` (Fase
+11 del ciclo 1) por `LiteLLMGeminiProvider.__init__(max_attempts,
+backoff_seconds)`: mismo comportamiento, ahora configurable por instancia.
+El default (`max_attempts=2, backoff_seconds=2.0`) preserva bit-a-bit el
+comportamiento del ciclo 1 (rollback seguro).
 
-`sleep_fn` es inyectable (default `time.sleep`) para que el test no espere
-el backoff real -- mismo patron de inyeccion de dependencias que
-`read_line`/`Provider`/`Store` en el resto del proyecto.
+`sleep_fn` sigue siendo inyectable (default `time.sleep`) para que el test
+no espere el backoff real.
 """
 
 from __future__ import annotations
@@ -45,9 +46,10 @@ def _messages() -> list[Message]:
     return [Message(role="user", content=[Block(type="text", text="hola")])]
 
 
-def test_send_retries_once_on_transient_500_then_succeeds(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_retries_on_5xx_then_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Scenario 'Reintento exitoso tras 5xx transitorio': GIVEN
+    attempts=3, WHEN la primera llamada falla con 5xx y la segunda tiene
+    exito, THEN retorna la respuesta exitosa sin propagar error."""
     calls = {"count": 0}
 
     def fake_completion(**kwargs: Any) -> _FakeResponse:
@@ -60,34 +62,67 @@ def test_send_retries_once_on_transient_500_then_succeeds(
 
     monkeypatch.setattr(adapter_module.litellm, "completion", fake_completion)
     sleeps: list[float] = []
-    provider = LiteLLMGeminiProvider(sleep_fn=sleeps.append)
+    provider = LiteLLMGeminiProvider(max_attempts=3, sleep_fn=sleeps.append)
 
     response = provider.send(_messages(), [])
 
     assert calls["count"] == 2
     assert response.content[0].text == "ok tras reintento"
-    assert len(sleeps) == 1  # exactamente un backoff antes del reintento
+    assert len(sleeps) == 1
 
 
-def test_send_does_not_retry_non_transient_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_exhausts_attempts_raises_clean_provider_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Scenario 'Agotar intentos produce ProviderError limpio': GIVEN
+    attempts=3 donde las 3 llamadas fallan con timeout, WHEN se agotan,
+    THEN se lanza `ProviderError` con la causa registrada y ningun tipo de
+    excepcion nativa del SDK cruza la frontera."""
+    calls = {"count": 0}
+
     def fake_completion(**kwargs: Any) -> _FakeResponse:
+        calls["count"] += 1
+        raise RuntimeError("timeout: 500 INTERNAL")
+
+    import erickfp.provider.litellm_gemini as adapter_module
+
+    monkeypatch.setattr(adapter_module.litellm, "completion", fake_completion)
+    provider = LiteLLMGeminiProvider(max_attempts=3, sleep_fn=lambda _seconds: None)
+
+    with pytest.raises(ProviderError, match="timeout") as excinfo:
+        provider.send(_messages(), [])
+
+    assert calls["count"] == 3
+    assert not isinstance(excinfo.value, RuntimeError)  # ProviderError, nunca la nativa
+    assert excinfo.value.__cause__ is not None  # causa registrada (from exc)
+
+
+def test_non_transient_4xx_does_not_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Scenario 'Errores no transitorios no se reintentan': GIVEN un error
+    de autenticacion (4xx no reintentable), WHEN ocurre en la primera
+    llamada, THEN el adapter NO reintenta y propaga `ProviderError` de
+    inmediato."""
+    calls = {"count": 0}
+
+    def fake_completion(**kwargs: Any) -> _FakeResponse:
+        calls["count"] += 1
         raise RuntimeError("401 Unauthorized: invalid API key")
 
     import erickfp.provider.litellm_gemini as adapter_module
 
     monkeypatch.setattr(adapter_module.litellm, "completion", fake_completion)
-    provider = LiteLLMGeminiProvider(sleep_fn=lambda _seconds: None)
+    provider = LiteLLMGeminiProvider(max_attempts=3, sleep_fn=lambda _seconds: None)
 
-    # Hotfix 2026-07-04: el adapter traduce CUALQUIER fallo definitivo a
-    # ProviderError (dominio) para que la CLI pueda fallar limpio sin conocer
-    # los tipos de excepcion de litellm.
     with pytest.raises(ProviderError, match="401 Unauthorized"):
         provider.send(_messages(), [])
 
+    assert calls["count"] == 1  # sin reintento
 
-def test_send_raises_after_second_transient_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    """El reintento es ACOTADO (una sola vez) -- un segundo 500 se propaga,
-    nunca se silencia un fallo real."""
+
+def test_default_constructor_preserves_cycle1_two_attempt_behavior(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """El default (`max_attempts=2, backoff_seconds=2.0`) preserva
+    bit-a-bit el comportamiento del ciclo 1: un segundo 500 consecutivo
+    agota los intentos y se propaga como `ProviderError`."""
 
     def fake_completion(**kwargs: Any) -> _FakeResponse:
         raise RuntimeError("500 INTERNAL")
@@ -95,7 +130,7 @@ def test_send_raises_after_second_transient_failure(monkeypatch: pytest.MonkeyPa
     import erickfp.provider.litellm_gemini as adapter_module
 
     monkeypatch.setattr(adapter_module.litellm, "completion", fake_completion)
-    provider = LiteLLMGeminiProvider(sleep_fn=lambda _seconds: None)
+    provider = LiteLLMGeminiProvider(sleep_fn=lambda _seconds: None)  # sin overrides
 
     with pytest.raises(ProviderError, match="500 INTERNAL"):
         provider.send(_messages(), [])

@@ -144,3 +144,46 @@ def test_text_only_thought_signature_is_reinjected_on_next_turn(
     assert assistant_entries[0]["provider_specific_fields"] == {
         "thought_signatures": signatures
     }
+
+
+def test_retry_preserves_thought_signature(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Lote 2, tarea 2.5 (design.md Decision 10, specs/provider-layer/spec.md
+    Scenario 'Retry preserva thought signature entre reintentos'): GIVEN un
+    turno con thought signature previa que sufre un timeout transitorio,
+    WHEN el adapter reintenta la llamada, THEN el reintento incluye la misma
+    thought signature del turno anterior -- el payload se construye UNA sola
+    vez antes de `_call_with_backoff` y se reenvia identico en cada intento,
+    nunca se reconstruye sin la firma."""
+    captured_payloads: list[dict[str, Any]] = []
+    signatures = ["QkFTRTY0U0lHTg=="]
+
+    def fake_completion(**kwargs: Any) -> SimpleNamespace:
+        captured_payloads.append(kwargs)
+        if len(captured_payloads) == 1:
+            raise RuntimeError("500 INTERNAL transient timeout")
+        return _raw_text_response("turno 2 ok tras retry")
+
+    import erickfp.provider.litellm_gemini as adapter_module
+
+    monkeypatch.setattr(adapter_module.litellm, "completion", fake_completion)
+
+    provider = LiteLLMGeminiProvider(max_attempts=2, sleep_fn=lambda _seconds: None)
+
+    turn1_text_block = Block(
+        type="text", text="ok", provider_metadata={"thought_signatures": signatures}
+    )
+    turn2_messages = [
+        Message(role="user", content=[Block(type="text", text="piensa en voz alta")]),
+        Message(role="assistant", content=[turn1_text_block]),
+        Message(role="user", content=[Block(type="text", text="continua")]),
+    ]
+
+    response = provider.send(turn2_messages, [])
+
+    assert response.content[0].text == "turno 2 ok tras retry"
+    assert len(captured_payloads) == 2  # 1 fallo transitorio + 1 reintento
+    for payload in captured_payloads:
+        assistant_entries = [m for m in payload["messages"] if m["role"] == "assistant"]
+        assert assistant_entries[0]["provider_specific_fields"] == {
+            "thought_signatures": signatures
+        }

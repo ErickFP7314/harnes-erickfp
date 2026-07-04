@@ -55,6 +55,21 @@ _CORE_ROLE_FILES = ("planner.md", "coder.md", "reviewer.md")
 _CORE_AGENT_ROLES = ("planner", "coder", "reviewer")
 _EXIT_COMMANDS = {"salir", "exit", "quit"}
 
+# Retry configurable del Provider (Lote 2, tarea 2.6, design.md Decision 10):
+# la composition root (`cli.py`) es quien decide `max_attempts`/
+# `backoff_seconds` -- el adapter solo expone el seam. Los valores
+# preservan bit-a-bit el default del ciclo 1 (2 intentos, 2s de backoff);
+# ajustarlos aqui no requiere tocar `provider/litellm_gemini.py`.
+_PROVIDER_MAX_ATTEMPTS = 2
+_PROVIDER_BACKOFF_SECONDS = 2.0
+
+
+def _build_provider() -> LiteLLMGeminiProvider:
+    return LiteLLMGeminiProvider(
+        max_attempts=_PROVIDER_MAX_ATTEMPTS,
+        backoff_seconds=_PROVIDER_BACKOFF_SECONDS,
+    )
+
 
 # -- init -----------------------------------------------------------------
 
@@ -231,7 +246,7 @@ def chat() -> None:
     console.print(f"[{_CYAN}]ErickFP chat -- Ctrl+D o 'salir' para terminar.[/{_CYAN}]")
 
     system_context = build_system_context(root, SqliteStore(root=root))
-    provider = LiteLLMGeminiProvider()
+    provider = _build_provider()
 
     try:
         run_chat_session(
@@ -268,7 +283,7 @@ def _load_role_prompt(root: Path, role: str) -> str:
 def _build_orchestrator(root: Path) -> CicloCogitoOrchestrator:
     role_prompts = {role: _load_role_prompt(root, role) for role in _CORE_AGENT_ROLES}
     hook_manager = HookManager([CoreGuardHook(root), AdrTraceabilityHook(root)])
-    provider = LiteLLMGeminiProvider()
+    provider = _build_provider()
     store = SqliteStore(root=root)
     return CicloCogitoOrchestrator(
         root=root,

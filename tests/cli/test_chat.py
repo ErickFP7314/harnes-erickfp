@@ -158,3 +158,36 @@ def test_chat_startup_renders_banner_and_uses_decorated_input(
     # El cuadro del prompt (ui.input_frame.frame) se imprimio ademas del banner.
     panels_after = sum(isinstance(item, Panel) for item in printed)
     assert panels_after > panels_before
+
+
+def test_chat_without_init_reports_clear_error(tmp_path: Path, monkeypatch) -> None:
+    """Lote 2, tarea 2.13 (SUGGESTION-1 del verify-report de ciclo 1):
+    `erickfp chat` sin `.ErickFP/` previo no crashea -- informa un error
+    claro (mencionando `init`) y sale con `exit_code == 1`, sin llegar a
+    renderizar el banner ni entrar al REPL."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["chat"])
+
+    assert result.exit_code == 1
+    assert "init" in result.output.lower()
+    assert "Traceback" not in result.output
+
+
+def test_repl_handles_eof_gracefully(tmp_path: Path, monkeypatch) -> None:
+    """Lote 2, tarea 2.13: un `EOFError` durante el REPL (p.ej. Ctrl+D o
+    stdin cerrado) no crashea `chat` -- se captura, se imprime una
+    despedida y el comando termina con `exit_code == 0`."""
+    monkeypatch.chdir(tmp_path)
+    runner.invoke(app, ["init"])
+
+    def _raise_eof(*_args: object, **_kwargs: object) -> None:
+        raise EOFError
+
+    monkeypatch.setattr(cli_module, "run_chat_session", _raise_eof)
+
+    result = runner.invoke(app, ["chat"])
+
+    assert result.exit_code == 0, result.output
+    assert "Hasta luego" in result.output
+    assert "Traceback" not in result.output

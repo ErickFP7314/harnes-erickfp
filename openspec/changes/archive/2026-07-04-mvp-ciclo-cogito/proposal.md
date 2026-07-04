@@ -79,10 +79,10 @@ Cambio aislado en un paquete nuevo sin dependencias previas. Rollback = descarta
 
 ## Success Criteria
 
-- [ ] `erickfp init` crea `.ErickFP/` completo con plantillas raíz.
-- [ ] `erickfp chat` conversa vía Gemini 3 Flash y ejecuta tools solo tras y/n; negar produce tool_result con `is_error=true`.
-- [ ] Ningún SDK nativo del LLM se importa fuera del adapter.
-- [ ] `duda → divide → ordena → enumera` corre secuencial, bloquea ante ambigüedad y encadena artefactos markdown.
-- [ ] Hook de protección impide que el agente edite `core/*`; hook pre-síntesis exige trazabilidad ADR.
-- [ ] Store SQLite persiste decisiones/sesiones del ciclo.
-- [ ] pytest+ruff instalados y `strict_tdd` activado en la primera fase de tareas.
+- [x] `erickfp init` crea `.ErickFP/` completo con plantillas raíz.
+- [x] `erickfp chat` conversa vía Gemini 3 Flash y ejecuta tools solo tras y/n; negar produce tool_result con `is_error=true`. (Nota: el default real, por decisión de usuario ADR-001, es `gemini/gemma-4-26b-a4b-it`, no `gemini-3-flash` — ver `verify-report.md` WARNING-1.)
+- [x] Ningún SDK nativo del LLM se importa fuera del adapter.
+- [x] `duda → divide → ordena → enumera` corre secuencial, bloquea ante ambigüedad y encadena artefactos markdown.
+- [x] Hook de protección impide que el agente edite `core/*`; hook pre-síntesis exige trazabilidad ADR.
+- [x] Store SQLite persiste decisiones/sesiones del ciclo.
+- [x] pytest+ruff instalados y `strict_tdd` activado en la primera fase de tareas.

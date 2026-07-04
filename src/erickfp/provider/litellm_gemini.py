@@ -22,8 +22,14 @@ hallazgo del spike 2.2, docs/spikes/free-tier-limits.md: con Gemma 4, 1 de 11
 llamadas reales consecutivas fallo con un 500 esporadico del servidor, sin
 relacion con la cuota). Extiende el patron ya usado en
 `scripts/spike_thought_signature.py::_call_with_backoff` (alli para 429) a
-estos errores: UN solo reintento acotado, nunca se silencia un fallo real
-distinto ni un segundo 500 consecutivo.
+estos errores: nunca se silencia un fallo real distinto ni el ultimo intento
+transitorio agotado.
+
+Retry configurable (Lote 2 harness-v0-2, tarea 2.2, design.md Decision 10):
+`max_attempts`/`backoff_seconds` son atributos del constructor -- ya no
+constantes de modulo -- para que `cli`/config puedan ajustarlos sin tocar
+este archivo. El default (`max_attempts=2, backoff_seconds=2.0`) preserva
+bit-a-bit el comportamiento del ciclo 1.
 """
 
 from __future__ import annotations
@@ -48,12 +54,12 @@ DEFAULT_MODEL = "gemini/gemma-4-26b-a4b-it"
 # Separador documentado en litellm/litellm_core_utils/prompt_templates/factory.py:64.
 THOUGHT_SIGNATURE_SEPARATOR = "__thought__"
 
-# Reintento ACOTADO: 1 llamada real + a lo sumo 1 reintento (2 intentos en
-# total) ante 500/INTERNAL transitorios (spike 2.2). Cualquier otro error, o
-# un segundo 500 consecutivo, se propaga tal cual -- nunca se silencia un
-# fallo real.
-_MAX_ATTEMPTS = 2
-_BACKOFF_SECONDS = 2.0
+# Defaults de retry (Decision 10): preservan bit-a-bit el comportamiento del
+# ciclo 1 (1 llamada real + a lo sumo 1 reintento) cuando el constructor no
+# recibe overrides. Cualquier otro error, o el ultimo intento transitorio
+# agotado, se propaga como `ProviderError` -- nunca se silencia un fallo real.
+_DEFAULT_MAX_ATTEMPTS = 2
+_DEFAULT_BACKOFF_SECONDS = 2.0
 _TRANSIENT_ERROR_MARKERS = ("500", "INTERNAL")
 
 
@@ -64,9 +70,13 @@ class LiteLLMGeminiProvider:
         self,
         model_name: str = DEFAULT_MODEL,
         sleep_fn: Callable[[float], None] = time.sleep,
+        max_attempts: int = _DEFAULT_MAX_ATTEMPTS,
+        backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
     ) -> None:
         self._model_name = model_name
         self._sleep_fn = sleep_fn
+        self._max_attempts = max_attempts
+        self._backoff_seconds = backoff_seconds
 
     def model(self) -> str:
         return self._model_name
@@ -89,22 +99,24 @@ class LiteLLMGeminiProvider:
         return self._to_response(raw)
 
     def _call_with_backoff(self, **kwargs: Any) -> Any:
-        """Llama a `litellm.completion` con hasta `_MAX_ATTEMPTS` intentos:
-        reintenta UNA vez, tras `_BACKOFF_SECONDS` de espera, solo si el error
-        es transitorio (`500`/`INTERNAL` en el mensaje, spike 2.2). Cualquier
-        otro error -- o un segundo error transitorio -- se relanza tal cual."""
-        for attempt in range(_MAX_ATTEMPTS):
+        """Llama a `litellm.completion` con hasta `self._max_attempts`
+        intentos: reintenta, tras `self._backoff_seconds` de espera, solo si
+        el error es transitorio (`500`/`INTERNAL` en el mensaje, spike 2.2).
+        Cualquier otro error -- o el ultimo intento transitorio agotado --
+        se traduce a `ProviderError` (dominio) en vez de relanzar la
+        excepcion nativa del SDK (Decision 10, tarea 2.3)."""
+        for attempt in range(self._max_attempts):
             try:
                 return litellm.completion(**kwargs)
             except Exception as exc:
                 is_transient = any(marker in str(exc) for marker in _TRANSIENT_ERROR_MARKERS)
-                is_last_attempt = attempt == _MAX_ATTEMPTS - 1
+                is_last_attempt = attempt == self._max_attempts - 1
                 if not is_transient or is_last_attempt:
                     # Fallo definitivo: se traduce a ProviderError (dominio)
                     # para que las capas superiores fallen limpio sin conocer
                     # los tipos de excepcion de litellm (hotfix 2026-07-04).
                     raise ProviderError(str(exc)) from exc
-                self._sleep_fn(_BACKOFF_SECONDS)
+                self._sleep_fn(self._backoff_seconds)
         raise AssertionError("inalcanzable: el loop siempre retorna o relanza")  # pragma: no cover
 
     # -- traduccion hacia LiteLLM --------------------------------------------

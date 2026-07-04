@@ -141,3 +141,40 @@ def test_core_guard_ignores_tool_inputs_without_path_field(tmp_path: Path) -> No
     result = hook.run(ctx)
 
     assert result.decision == "allow"
+
+
+def test_core_guard_handles_oserror_and_non_dict_input(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Lote 2, tarea 2.9 (SUGGESTION-1 del verify-report de ciclo 1): dos
+    ramas de error sin cubrir en `core_guard.py`.
+
+    1. `tool_input` que decodifica a JSON valido pero NO es un dict (p.ej.
+       una lista) -- `_extract_path` retorna cadena vacia en vez de fallar,
+       y el hook permite (no hay path que evaluar).
+    2. `Path.resolve()` lanza `OSError` (p.ej. bucle de symlinks) -- el hook
+       trata el candidato como fuera de `core/*` (allow) en vez de propagar
+       la excepcion nativa."""
+    root = tmp_path / ".ErickFP"
+    (root / "core").mkdir(parents=True)
+    hook = CoreGuardHook(root=root)
+
+    # Rama 1: tool_input es una lista JSON valida, no un dict.
+    non_dict_ctx = PhaseContext(
+        phase="ordena", tool_name="write_file", tool_input=json.dumps(["no", "es", "un", "dict"])
+    )
+    result_non_dict = hook.run(non_dict_ctx)
+    assert result_non_dict.decision == "allow"
+
+    # Rama 2: Path.resolve() lanza OSError (p.ej. bucle de symlinks real).
+    def _raise_oserror(self: Path) -> Path:
+        raise OSError("bucle de symlinks simulado")
+
+    monkeypatch.setattr(Path, "resolve", _raise_oserror)
+    oserror_ctx = PhaseContext(
+        phase="ordena",
+        tool_name="write_file",
+        tool_input=_write_file_input(str(root / "core" / "Claude")),
+    )
+    result_oserror = hook.run(oserror_ctx)
+    assert result_oserror.decision == "allow"

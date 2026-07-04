@@ -111,3 +111,17 @@ def test_duda_exits_cleanly_on_provider_error(
     assert result.exit_code == 1
     assert "500 INTERNAL" in result.output
     assert "Traceback" not in result.output
+
+
+def test_build_provider_passes_configurable_retry_to_constructor() -> None:
+    """Lote 2, tarea 2.6 (design.md Decision 10): la composition root
+    (`cli.py::_build_provider`) es quien fija `max_attempts`/
+    `backoff_seconds` del adapter -- no quedan hardcodeados dentro de
+    `provider/litellm_gemini.py`. Los valores preservan el default del
+    ciclo 1 (2 intentos, 2.0s de backoff)."""
+    provider = cli_module._build_provider()
+
+    assert provider._max_attempts == cli_module._PROVIDER_MAX_ATTEMPTS
+    assert provider._backoff_seconds == cli_module._PROVIDER_BACKOFF_SECONDS
+    assert cli_module._PROVIDER_MAX_ATTEMPTS == 2
+    assert cli_module._PROVIDER_BACKOFF_SECONDS == 2.0
