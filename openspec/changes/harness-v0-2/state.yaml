@@ -23,8 +23,10 @@ phases:
     artifact: openspec/changes/harness-v0-2/design.md
     engram: sdd/harness-v0-2/design
   tasks:
-    status: pending
+    status: done
     depends_on: [spec, design]
+    artifact: openspec/changes/harness-v0-2/tasks.md
+    engram: sdd/harness-v0-2/tasks
   apply:
     status: pending
     depends_on: [tasks]
@@ -70,4 +72,4 @@ delivery_batches:
   - id: 8
     name: mcp-support
 
-next_recommended: [sdd-spec, sdd-design]
+next_recommended: [sdd-apply]
