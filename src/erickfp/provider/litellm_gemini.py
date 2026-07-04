@@ -35,6 +35,7 @@ from typing import Any
 import litellm
 
 from erickfp.api.types import Block, Message, Response, ToolDef
+from erickfp.provider.base import ProviderError
 
 # ADR-001 (2026-07-03): default elegido por el usuario con evidencia del spike
 # 2.1 (docs/spikes/thought-signature.md) — Gemma 4 acepta `tools`, devuelve
@@ -99,7 +100,10 @@ class LiteLLMGeminiProvider:
                 is_transient = any(marker in str(exc) for marker in _TRANSIENT_ERROR_MARKERS)
                 is_last_attempt = attempt == _MAX_ATTEMPTS - 1
                 if not is_transient or is_last_attempt:
-                    raise
+                    # Fallo definitivo: se traduce a ProviderError (dominio)
+                    # para que las capas superiores fallen limpio sin conocer
+                    # los tipos de excepcion de litellm (hotfix 2026-07-04).
+                    raise ProviderError(str(exc)) from exc
                 self._sleep_fn(_BACKOFF_SECONDS)
         raise AssertionError("inalcanzable: el loop siempre retorna o relanza")  # pragma: no cover
 

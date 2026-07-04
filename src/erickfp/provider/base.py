@@ -13,6 +13,17 @@ from typing import Protocol
 from erickfp.api.types import Message, Response, ToolDef
 
 
+class ProviderError(Exception):
+    """Fallo definitivo del proveedor de LLM (hotfix 2026-07-04).
+
+    Los adapters traducen cualquier excepcion nativa (litellm, httpx, etc.)
+    a este tipo de dominio cuando agotan sus reintentos, para que las capas
+    superiores (CLI, orquestador) puedan fallar limpio -- sin traceback y
+    sin conocer los tipos de error de ningun SDK. El mensaje conserva el
+    texto del error original para diagnostico.
+    """
+
+
 class Provider(Protocol):
     def send(self, messages: list[Message], tools: list[ToolDef]) -> Response: ...
 

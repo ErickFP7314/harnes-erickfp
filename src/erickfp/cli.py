@@ -34,7 +34,7 @@ from erickfp.hooks.adr_traceability import AdrTraceabilityHook
 from erickfp.hooks.core_guard import CoreGuardHook
 from erickfp.hooks.manager import HookManager, PhaseContext
 from erickfp.memory.sqlite_store import SqliteStore
-from erickfp.provider.base import Provider
+from erickfp.provider.base import Provider, ProviderError
 from erickfp.provider.litellm_gemini import LiteLLMGeminiProvider
 from erickfp.tools.registry import ToolRegistry
 from erickfp.tools.registry import registry as tool_registry
@@ -177,10 +177,26 @@ def run_chat_session(
 
         content = [Block(type="text", text=system_context)] if first_turn else []
         content.append(Block(type="text", text=user_input))
+        previous_messages = messages
         messages = [*messages, Message(role="user", content=content)]
-        first_turn = False
 
-        messages = run_turn(provider, tools, messages, tool_defs)
+        try:
+            messages = run_turn(provider, tools, messages, tool_defs)
+        except ProviderError as exc:
+            # Hotfix 2026-07-04: un fallo definitivo del proveedor (p. ej.
+            # 500 persistente tras agotar el retry) NO mata el REPL. Se
+            # informa, se revierte el turno fallido (para no dejar un mensaje
+            # de usuario huerfano ni perder el contexto raiz del primer
+            # turno) y se espera el siguiente prompt.
+            console.print(
+                f"[{_RED}]El proveedor fallo tras los reintentos: {exc}[/{_RED}]\n"
+                f"[{_RED}]Suele ser inestabilidad temporal del modelo -- "
+                f"espera unos segundos y vuelve a intentarlo.[/{_RED}]"
+            )
+            messages = previous_messages
+            continue
+
+        first_turn = False
 
         last_message = messages[-1]
         for block in last_message.content:
@@ -282,6 +298,9 @@ def duda(objetivo: str) -> None:
     except PhaseBlockedError as exc:
         console.print(f"[{_RED}]{exc}[/{_RED}]")
         raise typer.Exit(code=1) from exc
+    except ProviderError as exc:
+        console.print(f"[{_RED}]El proveedor fallo tras los reintentos: {exc}[/{_RED}]")
+        raise typer.Exit(code=1) from exc
 
     _print_outcome(outcome)
     console.print(f"[{_CYAN}]slug: {slug}[/{_CYAN}]")
@@ -301,6 +320,9 @@ def _run_single_phase_command(phase: str, slug: str) -> None:
         raise typer.Exit(code=1) from exc
     except PhaseBlockedError as exc:
         console.print(f"[{_RED}]{exc}[/{_RED}]")
+        raise typer.Exit(code=1) from exc
+    except ProviderError as exc:
+        console.print(f"[{_RED}]El proveedor fallo tras los reintentos: {exc}[/{_RED}]")
         raise typer.Exit(code=1) from exc
 
     _print_outcome(outcome)
