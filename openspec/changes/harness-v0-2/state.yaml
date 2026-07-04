@@ -1,0 +1,73 @@
+change: harness-v0-2
+created: 2026-07-04
+artifact_store: hybrid
+execution_mode: interactive
+description: >
+  De MVP a agente pulido y extensible. Traduce 8 patrones del roadmap
+  byo-coding-agent + 1 capability de branding (ui-polish) pedida por el usuario,
+  y endurece la base con las deudas del ciclo 1. tui-textual diferido a Ciclo 3.
+
+phases:
+  proposal:
+    status: done
+    artifact: openspec/changes/harness-v0-2/proposal.md
+    engram: sdd/harness-v0-2/proposal
+  spec:
+    status: done
+    depends_on: [proposal]
+    artifact: openspec/changes/harness-v0-2/specs/
+    engram: sdd/harness-v0-2/spec
+  design:
+    status: done
+    depends_on: [proposal]
+    artifact: openspec/changes/harness-v0-2/design.md
+    engram: sdd/harness-v0-2/design
+  tasks:
+    status: pending
+    depends_on: [spec, design]
+  apply:
+    status: pending
+    depends_on: [tasks]
+  verify:
+    status: pending
+    depends_on: [apply]
+  archive:
+    status: pending
+    depends_on: [verify]
+
+capabilities:
+  new:
+    - ui-polish
+    - permission-policy
+    - slash-commands
+    - token-viewer
+    - compaction
+    - subagents
+    - mcp-support
+  modified:
+    - agent-loop
+    - provider-layer
+    - memory-store
+    - tool-registry
+  out_of_scope:
+    - tui-textual   # diferido a Ciclo 3 (evita solape con ui-polish e inflación del cambio)
+
+delivery_batches:
+  - id: 1
+    name: ui-polish
+  - id: 2
+    name: robustez-deuda-ciclo1
+  - id: 3
+    name: slash-commands + token-viewer
+  - id: 4
+    name: permission-policy
+  - id: 5
+    name: memoria-avanzada
+  - id: 6
+    name: compaction
+  - id: 7
+    name: subagentes
+  - id: 8
+    name: mcp-support
+
+next_recommended: [sdd-spec, sdd-design]
