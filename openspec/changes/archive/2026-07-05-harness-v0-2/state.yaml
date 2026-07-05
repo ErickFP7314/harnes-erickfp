@@ -10,22 +10,22 @@ description: >
 phases:
   proposal:
     status: done
-    artifact: openspec/changes/harness-v0-2/proposal.md
+    artifact: openspec/changes/archive/2026-07-05-harness-v0-2/proposal.md
     engram: sdd/harness-v0-2/proposal
   spec:
     status: done
     depends_on: [proposal]
-    artifact: openspec/changes/harness-v0-2/specs/
+    artifact: openspec/changes/archive/2026-07-05-harness-v0-2/specs/
     engram: sdd/harness-v0-2/spec
   design:
     status: done
     depends_on: [proposal]
-    artifact: openspec/changes/harness-v0-2/design.md
+    artifact: openspec/changes/archive/2026-07-05-harness-v0-2/design.md
     engram: sdd/harness-v0-2/design
   tasks:
     status: done
     depends_on: [spec, design]
-    artifact: openspec/changes/harness-v0-2/tasks.md
+    artifact: openspec/changes/archive/2026-07-05-harness-v0-2/tasks.md
     engram: sdd/harness-v0-2/tasks
   apply:
     status: done
@@ -36,12 +36,29 @@ phases:
   verify:
     status: done
     depends_on: [apply]
-    artifact: openspec/changes/harness-v0-2/verify-report.md
+    artifact: openspec/changes/archive/2026-07-05-harness-v0-2/verify-report.md
     engram: sdd/harness-v0-2/verify-report
     result: PASS (0 CRITICAL, 1 WARNING, 2 SUGGESTION)
   archive:
-    status: pending
+    status: done
     depends_on: [verify]
+    archived_on: 2026-07-05
+    archived_path: openspec/changes/archive/2026-07-05-harness-v0-2/
+    engram: sdd/harness-v0-2/archive-report
+    specs_merged:
+      new:
+        - ui-polish
+        - permission-policy
+        - slash-commands
+        - token-viewer
+        - compaction
+        - subagents
+        - mcp-support
+      modified:
+        - agent-loop
+        - provider-layer
+        - memory-store
+        - tool-registry
 
 capabilities:
   new:
@@ -80,4 +97,4 @@ delivery_batches:
   - id: 9
     name: verificacion-final-smoke-e2e
 
-next_recommended: [sdd-archive]  # verify completo: PASS, 247 tests/95% cobertura, 0 CRITICAL; ver verify-report.md
+next_recommended: [none]  # SDD cycle complete — change archived 2026-07-05
