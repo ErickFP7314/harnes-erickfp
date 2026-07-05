@@ -34,8 +34,11 @@ phases:
     batches_done: [1, 2, 3, 4, 5, 6, 7, 8, 9]
     next_batch: null
   verify:
-    status: pending
+    status: done
     depends_on: [apply]
+    artifact: openspec/changes/harness-v0-2/verify-report.md
+    engram: sdd/harness-v0-2/verify-report
+    result: PASS (0 CRITICAL, 1 WARNING, 2 SUGGESTION)
   archive:
     status: pending
     depends_on: [verify]
@@ -77,4 +80,4 @@ delivery_batches:
   - id: 9
     name: verificacion-final-smoke-e2e
 
-next_recommended: [sdd-verify]  # apply completo (9/9 lotes); ver docs/smoke-e2e-v0-2.md
+next_recommended: [sdd-archive]  # verify completo: PASS, 247 tests/95% cobertura, 0 CRITICAL; ver verify-report.md
