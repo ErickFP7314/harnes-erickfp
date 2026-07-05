@@ -33,6 +33,17 @@ inamovible: `PreToolUse`/`core_guard` SIEMPRE se evalua antes de siquiera
 llegar al gate -- ninguna `PermissionPolicy` (incluidas `AllowList`/
 `AskOnce`) puede aprobar automaticamente lo que el core_guard ya denego
 (Requirement 'core_guard prevalece sobre cualquier policy').
+
+Compaction (Lote 6 harness-v0-2, tarea 6.9, design.md Decision 5; spec
+compaction): `compaction` es OPCIONAL (default `None`, mismo patron que
+`tracker`/`policy`) y se invoca EXACTAMENTE una vez, al inicio del turno,
+ANTES de la primera llamada a `provider.send` -- nunca dentro del bucle de
+tool calls (eso duplicaria el costo de compactar y podria recortar
+`tool_result` recien generados en el mismo turno). Si `compaction is None`
+el comportamiento es identico al de antes de este Lote (bit-a-bit): la
+compactacion NUNCA corre dentro de `Provider.send` (Scenario 'Compaction
+nunca corre dentro de Provider.send') -- el adapter ni siquiera importa la
+capa `compaction` (ver tests/provider/test_litellm_gemini.py).
 """
 
 from __future__ import annotations
@@ -41,6 +52,7 @@ from erickfp.agent.gate import run_tool_with_gate
 from erickfp.agent.policy import PermissionPolicy
 from erickfp.agent.tokens import TokenTracker
 from erickfp.api.types import Block, Message, ToolDef
+from erickfp.compaction.base import CompactionStrategy
 from erickfp.hooks.manager import HookManager, PhaseContext
 from erickfp.provider.base import Provider
 from erickfp.tools.registry import ToolRegistry
@@ -55,6 +67,7 @@ def run_turn(
     ctx: PhaseContext | None = None,
     tracker: TokenTracker | None = None,
     policy: PermissionPolicy | None = None,
+    compaction: CompactionStrategy | None = None,
 ) -> list[Message]:
     """Ejecuta un turno completo hasta `stop_reason != "tool_use"`.
 
@@ -66,8 +79,16 @@ def run_turn(
     OPCIONAL (default `None`, igual patron que `hook_manager`/`ctx`): si se
     inyecta, cada respuesta real del Provider dentro del turno reporta su
     `usage` -- incluye llamadas intermedias con `tool_use`, no solo la final.
+
+    `compaction` (Lote 6 harness-v0-2, tarea 6.9, design.md Decision 5) es
+    OPCIONAL (default `None`): si se inyecta, `compaction.compact(messages)`
+    se aplica UNA sola vez, antes del primer `provider.send` del turno --
+    el resultado (posiblemente mas corto) es lo que efectivamente se envia
+    al Provider.
     """
     current_messages = list(messages)
+    if compaction is not None:
+        current_messages = compaction.compact(current_messages)
 
     while True:
         response = provider.send(current_messages, tool_defs)

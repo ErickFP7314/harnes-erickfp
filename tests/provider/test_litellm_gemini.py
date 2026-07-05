@@ -6,6 +6,10 @@ docs/spikes/thought-signature.md). Todo se prueba mockeando
 cruzar hacia el llamador (Decision 2 del design).
 """
 
+import ast
+import inspect
+import sys
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -205,3 +209,50 @@ def test_send_with_no_tools_passes_none_to_litellm(monkeypatch: pytest.MonkeyPat
     provider.send([Message(role="user", content=[Block(type="text", text="hola")])], [])
 
     assert captured["tools"] is None
+
+
+def test_provider_send_never_invokes_compaction_strategy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Lote 6 harness-v0-2, tarea 6.8 (specs/compaction/spec.md Scenario
+    'Compaction nunca corre dentro de Provider.send'): GIVEN un turno en
+    curso donde el adapter invoca `Provider.send`, WHEN se inspecciona el
+    call stack de esa invocacion, THEN ninguna llamada a `CompactionStrategy`
+    ocurre dentro de `Provider.send` -- la compactacion, si aplica, ya
+    ocurrio antes en la capa `agent` (`run_turn`, tarea 6.9).
+
+    Doble verificacion, ninguna vacia:
+    1. Estatica (AST, mismo patron que
+       `tests/tools/test_recall.py::test_recall_module_never_imports_memory_layer`):
+       `litellm_gemini.py` nunca importa `erickfp.compaction` a nivel de
+       modulo.
+    2. Dinamica: se retira `erickfp.compaction` de `sys.modules` antes de
+       llamar a `send()` real; si el adapter importara/invocara compaction
+       de forma perezosa dentro de `send()`, el modulo reapareceria en
+       `sys.modules` tras la llamada -- lo cual esta prueba detectaria como
+       regresion real, no solo textual.
+    """
+    import erickfp.provider.litellm_gemini as adapter_module
+
+    # -- 1. estatica: ningun import de erickfp.compaction en el codigo fuente.
+    source_path = Path(inspect.getfile(adapter_module))
+    tree = ast.parse(source_path.read_text(encoding="utf-8"))
+    imported_names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported_names.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported_names.add(node.module)
+    assert not any(name.startswith("erickfp.compaction") for name in imported_names)
+
+    # -- 2. dinamica: send() real no dispara una importacion perezosa.
+    for module_name in list(sys.modules):
+        if module_name.startswith("erickfp.compaction"):
+            monkeypatch.delitem(sys.modules, module_name)
+
+    monkeypatch.setattr(adapter_module.litellm, "completion", lambda **kwargs: _raw_text_response())
+
+    provider = LiteLLMGeminiProvider()
+    provider.send([Message(role="user", content=[Block(type="text", text="hola")])], [])
+
+    assert not any(name.startswith("erickfp.compaction") for name in sys.modules)

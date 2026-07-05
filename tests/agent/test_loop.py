@@ -15,6 +15,7 @@ from erickfp.agent.loop import run_turn
 from erickfp.agent.policy import AllowList, AlwaysAsk, AskOnce
 from erickfp.agent.tokens import TokenTracker
 from erickfp.api.types import Block, Entry, Message, Response, Usage
+from erickfp.compaction.base import CompactionStrategy
 from erickfp.tools.recall import RecallTool
 from erickfp.tools.registry import ToolRegistry
 from tests.support import FakeTool, MockProvider
@@ -273,3 +274,55 @@ def test_recall_tool_passes_through_gate_like_other_tools(monkeypatch) -> None:
     assert tool_result.type == "tool_result"
     assert tool_result.is_error is False
     assert "dato recuperado de prueba" in tool_result.tool_result
+
+
+class _SpyCompactionStrategy:
+    """Doble de `CompactionStrategy` (Lote 6, design.md Decision 5): registra
+    los `messages` recibidos y retorna una lista mas corta reconocible, para
+    poder verificar tanto QUE se invoco como CUANDO (antes del primer
+    `provider.send`)."""
+
+    def __init__(self) -> None:
+        self.calls: list[list[Message]] = []
+
+    def compact(self, messages: list[Message]) -> list[Message]:
+        self.calls.append(messages)
+        return messages[-1:]  # recorte reconocible: solo el ultimo mensaje
+
+
+def test_run_turn_invokes_compaction_before_first_provider_send() -> None:
+    """Lote 6 harness-v0-2, tarea 6.9 (design.md Decision 5: 'Invocacion:
+    inicio de run_turn, antes del primer provider.send'): el `messages`
+    efectivamente enviado al Provider es el YA COMPACTADO -- no el original
+    -- y `compact()` se invoca exactamente una vez por turno (no una vez por
+    cada llamada intermedia a `provider.send` dentro del mismo turno)."""
+    compaction: CompactionStrategy = _SpyCompactionStrategy()
+    provider = MockProvider(
+        responses=[Response(content=[Block(type="text", text="listo")], stop_reason="end_turn")]
+    )
+    messages = [
+        Message(role="user", content=[Block(type="text", text="turno viejo")]),
+        Message(role="user", content=[Block(type="text", text="turno reciente")]),
+    ]
+
+    run_turn(provider, ToolRegistry(), messages, [], compaction=compaction)
+
+    assert len(compaction.calls) == 1  # una sola vez, al inicio del turno
+    assert compaction.calls[0] == messages  # recibio el historial ORIGINAL
+    assert len(provider.sent_messages) == 1
+    assert provider.sent_messages[0] == messages[-1:]  # el Provider vio el YA compactado
+
+
+def test_run_turn_without_compaction_keeps_previous_behavior() -> None:
+    """Retrocompatibilidad: `compaction=None` (default) preserva el
+    comportamiento previo bit-a-bit -- ninguna prueba existente deberia
+    romperse (mismo patron que `tracker=None`/`policy=None`)."""
+    provider = MockProvider(
+        responses=[Response(content=[Block(type="text", text="hola")], stop_reason="end_turn")]
+    )
+    messages = [Message(role="user", content=[Block(type="text", text="hola")])]
+
+    result = run_turn(provider, ToolRegistry(), messages, [])
+
+    assert provider.sent_messages[0] == messages  # sin compactar
+    assert result[-1].content[0].text == "hola"

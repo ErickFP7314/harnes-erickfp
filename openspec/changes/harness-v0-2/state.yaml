@@ -31,8 +31,8 @@ phases:
     status: in_progress
     depends_on: [tasks]
     engram: sdd/harness-v0-2/apply-progress
-    batches_done: [1, 2, 3, 4, 5]
-    next_batch: 6
+    batches_done: [1, 2, 3, 4, 5, 6]
+    next_batch: 7
   verify:
     status: pending
     depends_on: [apply]
@@ -75,4 +75,4 @@ delivery_batches:
   - id: 8
     name: mcp-support
 
-next_recommended: [sdd-apply]  # Lote 6 (compaction) sigue pendiente
+next_recommended: [sdd-apply]  # Lote 7 (subagentes) sigue pendiente
