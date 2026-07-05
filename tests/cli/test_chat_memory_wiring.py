@@ -34,7 +34,7 @@ def test_chat_wires_sqlite_store_preamble_into_system_context(
     captured: dict[str, str] = {}
 
     def fake_run_chat_session(
-        provider, tools, console, system_context, read_line=None, hook_manager=None
+        provider, tools, console, system_context, read_line=None, hook_manager=None, store=None
     ):
         # `hook_manager` (Lote 4, spec permission-policy): `chat()` ahora
         # inyecta un HookManager real con CoreGuardHook -- el stub solo
@@ -62,7 +62,7 @@ def test_chat_reuses_the_same_db_across_two_sessions(tmp_path: Path, monkeypatch
     captured: list[str] = []
 
     def fake_run_chat_session(
-        provider, tools, console, system_context, read_line=None, hook_manager=None
+        provider, tools, console, system_context, read_line=None, hook_manager=None, store=None
     ):
         captured.append(system_context)
 

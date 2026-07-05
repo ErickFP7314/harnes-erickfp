@@ -61,12 +61,17 @@ def test_all_tools_returns_registered_tool_instances() -> None:
 def test_module_level_registry_singleton_has_the_three_mvp_tools_registered() -> None:
     """Scenario 'Registro de las 3 tools del MVP' (specs/tool-registry/spec.md).
 
-    Esta prueba se agrega ahora (RED) pero solo pasara cuando exista el
-    modulo `erickfp.tools.registry` con las 3 tools concretas ya cableadas
-    (tarea 5.8) -- bash/read_file/write_file todavia no existen en el punto
-    5.3/5.4 de la implementacion.
-    """
+    Actualizado en Lote 5 harness-v0-2 (spec tool-registry delta, MODIFIED
+    'Orden estable de definiciones'): el registry del PROCESO (singleton
+    compartido) puede crecer mas alla de las 3 tools del MVP en tiempo de
+    ejecucion -- `recall` se registra en el composition root (`cli.py::chat`,
+    tarea 5.7) y tools MCP se sumaran igual en el Lote 8. La garantia que
+    esta prueba sostiene ahora es mas precisa que una igualdad exacta: las 3
+    tools locales del MVP SIEMPRE estan presentes y en su orden relativo
+    original, sin importar que registros posteriores del proceso hayan
+    agregado otras tools (nunca las reordenan)."""
     from erickfp.tools.registry import registry as module_registry
 
-    names = {d.name for d in module_registry.definitions()}
-    assert names == {"bash", "read_file", "write_file"}
+    names = [d.name for d in module_registry.definitions()]
+    mvp_names_in_order = [name for name in names if name in {"bash", "read_file", "write_file"}]
+    assert mvp_names_in_order == ["bash", "read_file", "write_file"]

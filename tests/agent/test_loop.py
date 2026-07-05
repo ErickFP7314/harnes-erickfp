@@ -14,7 +14,8 @@ import pytest
 from erickfp.agent.loop import run_turn
 from erickfp.agent.policy import AllowList, AlwaysAsk, AskOnce
 from erickfp.agent.tokens import TokenTracker
-from erickfp.api.types import Block, Message, Response, Usage
+from erickfp.api.types import Block, Entry, Message, Response, Usage
+from erickfp.tools.recall import RecallTool
 from erickfp.tools.registry import ToolRegistry
 from tests.support import FakeTool, MockProvider
 
@@ -209,3 +210,66 @@ def test_no_tool_executes_without_gate_and_policy_regardless_of_policy_impl(
 
     assert decide_calls == [("alpha", "{}")]  # el gate SIEMPRE consulto la policy
     assert tool.executed_with == ["{}"]  # unica ejecucion, siempre via el gate
+
+
+class _FakeRecallSource:
+    """Doble ad-hoc (Lote 5, spec memory-store delta): satisface
+    `.recall(query, limit)` sin importar `erickfp.memory` -- mismo patron
+    de duck typing usado en `tests/tools/test_recall.py`."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, int]] = []
+
+    def recall(self, query: str, limit: int) -> list[Entry]:
+        self.calls.append((query, limit))
+        return [Entry(kind="fact", content="dato recuperado de prueba")]
+
+
+def test_recall_tool_passes_through_gate_like_other_tools(monkeypatch) -> None:
+    """Lote 5 harness-v0-2 (spec memory-store delta, Requirement 'Recall
+    bajo demanda' MODIFICADO, Scenario 'Recall como Tool pasa por el
+    gate'): una `RecallTool` real (sin monkeypatchear `run_tool_with_gate`)
+    consulta la policy activa y solo ejecuta `store.recall(...)` a traves
+    del gate -- exactamente el mismo camino que cualquier otra tool local
+    (`bash`/`read_file`/`write_file`), sin ruta alterna."""
+    monkeypatch.setattr("erickfp.agent.gate.read_line", lambda prompt: "y")
+
+    recall_source = _FakeRecallSource()
+    tool = RecallTool(recall_source)
+    tools = ToolRegistry()
+    tools.register(tool)
+    policy = AllowList({"recall"})
+
+    decide_calls: list[tuple[str, str]] = []
+    original_decide = policy.decide
+
+    def spy_decide(tool_name: str, tool_input: str) -> str:
+        decide_calls.append((tool_name, tool_input))
+        return original_decide(tool_name, tool_input)
+
+    monkeypatch.setattr(policy, "decide", spy_decide)
+
+    tool_input = '{"query": "prueba", "limit": 5}'
+    first_response = Response(
+        content=[
+            Block(
+                type="tool_use",
+                tool_use_id="call-1",
+                tool_name="recall",
+                tool_input=tool_input,
+            )
+        ],
+        stop_reason="tool_use",
+    )
+    second_response = Response(content=[Block(type="text", text="listo")], stop_reason="end_turn")
+    provider = MockProvider(responses=[first_response, second_response])
+    messages = [Message(role="user", content=[Block(type="text", text="recuerda algo")])]
+
+    result = run_turn(provider, tools, messages, tools.definitions(), policy=policy)
+
+    assert decide_calls == [("recall", tool_input)]  # el gate consulto la policy
+    assert recall_source.calls == [("prueba", 5)]  # unica ejecucion, siempre via el gate
+    tool_result = result[-2].content[0]
+    assert tool_result.type == "tool_result"
+    assert tool_result.is_error is False
+    assert "dato recuperado de prueba" in tool_result.tool_result

@@ -29,7 +29,7 @@ from erickfp.agent.gate import read_line as gate_read_line
 from erickfp.agent.loop import run_turn
 from erickfp.agent.policy import PermissionPolicy
 from erickfp.agent.tokens import TokenTracker
-from erickfp.api.types import Block, Message, ToolDef
+from erickfp.api.types import Block, Entry, Message, ToolDef
 from erickfp.cogito.artifacts import ArtifactMissingError
 from erickfp.cogito.orchestrator import CicloCogitoOrchestrator, PhaseBlockedError, PhaseOutcome
 from erickfp.hooks.adr_traceability import AdrTraceabilityHook
@@ -38,6 +38,7 @@ from erickfp.hooks.manager import HookManager, PhaseContext
 from erickfp.memory.sqlite_store import SqliteStore
 from erickfp.provider.base import Provider, ProviderError
 from erickfp.provider.litellm_gemini import DEFAULT_MODEL, LiteLLMGeminiProvider
+from erickfp.tools.recall import RecallTool
 from erickfp.tools.registry import ToolRegistry
 from erickfp.tools.registry import registry as tool_registry
 from erickfp.ui.banner import render_banner
@@ -144,6 +145,68 @@ class PreambleSource(Protocol):
     """
 
     def preamble(self) -> str: ...
+
+
+class SessionSummaryStore(Protocol):
+    """Forma estructural minima que `run_chat_session` necesita para
+    persistir el resumen de fin de sesion (Lote 5 harness-v0-2, spec
+    memory-store delta, Requirement 'Resumen de fin de sesion', design.md
+    D9): mismo patron de duck typing que `PreambleSource` -- se define
+    aqui, no se importa `erickfp.memory.store.Store`, para que un doble de
+    prueba ad-hoc (o cualquier otro objeto con `.save(entry)`) la
+    satisfaga sin depender de `erickfp.memory`. Hoy la satisface
+    `SqliteStore`."""
+
+    def save(self, entry: Entry) -> None: ...
+
+
+# Resumen de fin de sesion (Lote 5, spec memory-store delta, design.md D9):
+# instruccion de sintesis enviada al Provider como un turno adicional, SOLO
+# al salir del REPL y SOLO si hubo al menos un turno real (Scenario 'Sesion
+# sin turnos no genera resumen vacio innecesario').
+_SESSION_SUMMARY_PROMPT = (
+    "Resume esta sesion de chat en 2-3 frases breves, en tercera persona, "
+    "para que quede como contexto util al iniciar la proxima sesion."
+)
+
+
+def _persist_session_summary(
+    provider: Provider,
+    console: Console,
+    store: SessionSummaryStore | None,
+    messages: list[Message],
+) -> None:
+    """Al salir de `run_chat_session` (spec memory-store delta, Requirement
+    'Resumen de fin de sesion'): si hubo al menos un turno completado, pide
+    al Provider una sintesis breve (`provider.send`, un turno adicional) y
+    la persiste como `Entry(kind="session-summary")`. Un `ProviderError`
+    (el Provider agoto sus reintentos) NUNCA bloquea la salida -- se
+    informa por consola y se omite el resumen, sin relanzar la excepcion
+    (mismo axioma que el resto del REPL: fallar limpio, jamas crashear).
+    Sesion vacia (`messages == []`) u objeto `store` ausente: no-op.
+    """
+    if store is None or not messages:
+        return
+
+    summary_request = [
+        *messages,
+        Message(role="user", content=[Block(type="text", text=_SESSION_SUMMARY_PROMPT)]),
+    ]
+    try:
+        response = provider.send(summary_request, [])
+    except ProviderError as exc:
+        console.print(
+            f"[{_RED}]No se pudo generar el resumen de la sesion "
+            f"(el proveedor fallo tras los reintentos): {exc}[/{_RED}]"
+        )
+        return
+
+    summary_text = " ".join(
+        block.text for block in response.content if block.type == "text" and block.text
+    ).strip()
+    if not summary_text:
+        return
+    store.save(Entry(kind="session-summary", content=summary_text))
 
 
 def _read_or_empty(path: Path) -> str:
@@ -292,6 +355,7 @@ def run_chat_session(
     tracker: TokenTracker | None = None,
     hook_manager: HookManager | None = None,
     policy: PermissionPolicy | None = None,
+    store: SessionSummaryStore | None = None,
 ) -> None:
     """Bucle REPL (spec agent-loop, Requirement 'Loop REPL con Provider'):
     un turno de texto plano por iteracion. El contexto de sistema se
@@ -310,6 +374,16 @@ def run_chat_session(
     para que `core_guard` este SIEMPRE activo tambien en el REPL de chat, no
     solo en las fases del Ciclo Cogito -- `policy=None` preserva el
     comportamiento identico al ciclo 1 (`AlwaysAsk` implicito en el gate).
+
+    `store` (Lote 5 harness-v0-2, spec memory-store delta, design.md D9) es
+    OPCIONAL (default `None`, mismo patron que `tracker`/`hook_manager`):
+    si se inyecta, AL SALIR del REPL -- por comando ("salir"/"exit"/"quit")
+    o por `EOFError` propagado (Ctrl+D) -- se persiste un resumen de la
+    sesion via `_persist_session_summary`. El `try/finally` que envuelve el
+    loop garantiza que esto ocurra en AMBAS rutas de salida sin duplicar
+    logica: un `return` normal ejecuta el `finally` antes de retornar, y una
+    excepcion que se propaga (`EOFError`) tambien lo ejecuta antes de seguir
+    subiendo hacia `chat()`.
     """
     tool_defs = tools.definitions()
     active_tracker = tracker if tracker is not None else TokenTracker()
@@ -319,62 +393,65 @@ def run_chat_session(
     )
     ctx = PhaseContext(phase="chat") if hook_manager is not None else None
 
-    while True:
-        user_input = read_line("tu> ")
-        if user_input.strip().lower() in _EXIT_COMMANDS:
-            return
+    try:
+        while True:
+            user_input = read_line("tu> ")
+            if user_input.strip().lower() in _EXIT_COMMANDS:
+                return
 
-        if user_input.startswith("/"):
-            command, _, argument = user_input[1:].partition(" ")
-            handler = slash_registry.get(command.strip().lower())
-            if handler is None:
-                console.print(
-                    f"[{_RED}]Comando desconocido: /{command}. "
-                    f"Usa /help para ver los comandos disponibles.[/{_RED}]"
+            if user_input.startswith("/"):
+                command, _, argument = user_input[1:].partition(" ")
+                handler = slash_registry.get(command.strip().lower())
+                if handler is None:
+                    console.print(
+                        f"[{_RED}]Comando desconocido: /{command}. "
+                        f"Usa /help para ver los comandos disponibles.[/{_RED}]"
+                    )
+                else:
+                    handler(argument.strip())
+                continue
+
+            messages = state.messages
+            first_turn = state.first_turn
+            content = [Block(type="text", text=system_context)] if first_turn else []
+            content.append(Block(type="text", text=user_input))
+            previous_messages = messages
+            messages = [*messages, Message(role="user", content=content)]
+
+            try:
+                messages = run_turn(
+                    provider,
+                    tools,
+                    messages,
+                    tool_defs,
+                    hook_manager=hook_manager,
+                    ctx=ctx,
+                    tracker=active_tracker,
+                    policy=policy,
                 )
-            else:
-                handler(argument.strip())
-            continue
+            except ProviderError as exc:
+                # Hotfix 2026-07-04: un fallo definitivo del proveedor (p. ej.
+                # 500 persistente tras agotar el retry) NO mata el REPL. Se
+                # informa, se revierte el turno fallido (para no dejar un mensaje
+                # de usuario huerfano ni perder el contexto raiz del primer
+                # turno) y se espera el siguiente prompt.
+                console.print(
+                    f"[{_RED}]El proveedor fallo tras los reintentos: {exc}[/{_RED}]\n"
+                    f"[{_RED}]Suele ser inestabilidad temporal del modelo -- "
+                    f"espera unos segundos y vuelve a intentarlo.[/{_RED}]"
+                )
+                messages = previous_messages
+                continue
 
-        messages = state.messages
-        first_turn = state.first_turn
-        content = [Block(type="text", text=system_context)] if first_turn else []
-        content.append(Block(type="text", text=user_input))
-        previous_messages = messages
-        messages = [*messages, Message(role="user", content=content)]
+            state.messages = messages
+            state.first_turn = False
 
-        try:
-            messages = run_turn(
-                provider,
-                tools,
-                messages,
-                tool_defs,
-                hook_manager=hook_manager,
-                ctx=ctx,
-                tracker=active_tracker,
-                policy=policy,
-            )
-        except ProviderError as exc:
-            # Hotfix 2026-07-04: un fallo definitivo del proveedor (p. ej.
-            # 500 persistente tras agotar el retry) NO mata el REPL. Se
-            # informa, se revierte el turno fallido (para no dejar un mensaje
-            # de usuario huerfano ni perder el contexto raiz del primer
-            # turno) y se espera el siguiente prompt.
-            console.print(
-                f"[{_RED}]El proveedor fallo tras los reintentos: {exc}[/{_RED}]\n"
-                f"[{_RED}]Suele ser inestabilidad temporal del modelo -- "
-                f"espera unos segundos y vuelve a intentarlo.[/{_RED}]"
-            )
-            messages = previous_messages
-            continue
-
-        state.messages = messages
-        state.first_turn = False
-
-        last_message = messages[-1]
-        for block in last_message.content:
-            if block.type == "text" and block.text:
-                console.print(f"[{_CYAN}]erickfp>[/{_CYAN}] {block.text}")
+            last_message = messages[-1]
+            for block in last_message.content:
+                if block.type == "text" and block.text:
+                    console.print(f"[{_CYAN}]erickfp>[/{_CYAN}] {block.text}")
+    finally:
+        _persist_session_summary(provider, console, store, state.messages)
 
 
 def _decorated_read_line(prompt: str) -> str:
@@ -404,12 +481,19 @@ def chat() -> None:
         f"Escribe /help para ver los comandos disponibles.[/{_CYAN}]"
     )
 
-    system_context = build_system_context(root, SqliteStore(root=root))
+    store = SqliteStore(root=root)
+    system_context = build_system_context(root, store)
     provider = _build_provider()
     # core_guard SIEMPRE activo (Lote 4, spec permission-policy, Requirement
     # 'core_guard prevalece sobre cualquier policy'): tambien en el REPL de
     # chat, no solo en las fases del Ciclo Cogito (`_build_orchestrator`).
     hook_manager = HookManager([CoreGuardHook(root)])
+    # RecallTool (Lote 5, spec memory-store delta, design.md D9): se
+    # instancia con el `store` real EN el composition root -- `tools/`
+    # nunca importa `memory/` (capas hermanas). Registrar en el `registry`
+    # compartido del proceso hace que `recall` este disponible como
+    # cualquier otra tool, pasando por el mismo gate/policy.
+    tool_registry.register(RecallTool(store))
 
     try:
         run_chat_session(
@@ -419,6 +503,7 @@ def chat() -> None:
             system_context,
             read_line=_decorated_read_line,
             hook_manager=hook_manager,
+            store=store,
         )
     except EOFError:
         console.print(f"\n[{_CYAN}]Hasta luego.[/{_CYAN}]")

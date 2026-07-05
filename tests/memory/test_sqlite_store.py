@@ -10,6 +10,7 @@ import sqlite3
 from pathlib import Path
 
 from erickfp.api.types import Entry
+from erickfp.memory import sqlite_store
 from erickfp.memory.sqlite_store import SqliteStore
 
 
@@ -80,6 +81,41 @@ def test_preamble_empty_when_no_entries(tmp_path: Path) -> None:
     store = SqliteStore(root=tmp_path / ".ErickFP")
 
     assert store.preamble() == ""
+
+
+def test_preamble_includes_latest_session_summary(tmp_path: Path) -> None:
+    """Lote 5 harness-v0-2 (spec memory-store delta, Requirement 'Preamble de
+    hechos de alto valor' MODIFICADO): `preamble()` esta acotado por tamano
+    (design.md D9, 'preamble acotado con limite') -- un volumen grande de
+    `fact`s viejos NO debe impedir que el resumen de sesion MAS RECIENTE
+    quede incluido. El comportamiento nuevo (bound por tamano, entradas
+    recientes priorizadas) todavia no existe: sin el, este test falla porque
+    el preamble crece sin limite y supera `_PREAMBLE_MAX_CHARS`."""
+    store = SqliteStore(root=tmp_path / ".ErickFP")
+    for i in range(200):
+        store.save(Entry(kind="fact", content=f"hecho-viejo-numero-{i:04d}" * 3))
+    store.save(Entry(kind="session-summary", content="RESUMEN-SESION-MAS-RECIENTE"))
+
+    preamble = store.preamble()
+
+    assert len(preamble) <= sqlite_store._PREAMBLE_MAX_CHARS
+    assert "RESUMEN-SESION-MAS-RECIENTE" in preamble
+    # El hecho MAS VIEJO es el primero en descartarse cuando hay que acotar.
+    assert "hecho-viejo-numero-0000" not in preamble
+
+
+def test_preamble_under_size_limit_keeps_all_entries(tmp_path: Path) -> None:
+    """Triangulacion: cuando el contenido total NO excede el limite de
+    tamano, el bound no descarta nada (no es un truncado agresivo por
+    conteo fijo, sino por tamano real)."""
+    store = SqliteStore(root=tmp_path / ".ErickFP")
+    store.save(Entry(kind="fact", content="hecho corto"))
+    store.save(Entry(kind="session-summary", content="resumen corto"))
+
+    preamble = store.preamble()
+
+    assert "hecho corto" in preamble
+    assert "resumen corto" in preamble
 
 
 def test_schema_created_with_create_table_if_not_exists_is_idempotent(tmp_path: Path) -> None:
