@@ -12,6 +12,13 @@ dependencies = [
     "litellm>=1.40",
     "rich>=13.0",
     "pyyaml>=6.0",
+    # SDK oficial MCP (Lote 8 harness-v0-2, design.md Decision 8): unica
+    # dependencia nueva de este lote, aislada a `tools/mcp.py` (unico
+    # modulo del paquete que la importa -- mismo patron que `litellm` en
+    # `provider/litellm_gemini.py`, Decision 2). El axioma "prohibido SDK
+    # nativo" protege la frontera Provider/LLM, no el transporte de tools
+    # (JSON-RPC/stdio) que MCP resuelve -- por eso esta permitida aqui.
+    "mcp>=1.28",
 ]
 
 [project.scripts]

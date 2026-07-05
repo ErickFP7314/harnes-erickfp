@@ -116,17 +116,17 @@ Convención: cada tarea de implementación es RED (test que falla) → GREEN (m�
 - [x] 7.8 GREEN `subagents/delegate.py::DelegateTool` instancia `Research`; salida UI indentada `↳`; registro en composition root `cli.py` (registry extendido; `tools/` nunca importa `agent`/`subagents`).
 - [x] 7.9 Suite completa verde (lint-imports valida capa `subagents` y el ciclo delegate resuelto) antes de Lote 8: pytest 226 passed, ruff clean, mypy clean (46 files), lint-imports "1 kept, 0 broken".
 
-## Lote 8 — mcp-support
+## Lote 8 — mcp-support — [x] COMPLETO (9/9)
 
-- [ ] 8.1 Añadir dependencia SDK `mcp` a `pyproject.toml` (única, aislada a este lote).
-- [ ] 8.2 RED `MCPTool` satisface `Protocol Tool`; único módulo que importa `mcp`. Test: `tests/tools/test_mcp.py::test_only_mcp_module_imports_mcp_sdk`
-- [ ] 8.3 GREEN `tools/mcp.py::MCPTool` + parseo `.ErickFP/mcp.json` (command/args, stdio).
-- [ ] 8.4 RED tool MCP se registra en el mismo registry, sin reordenar las locales. Test: `tests/tools/test_registry.py::test_mcp_tool_appended_at_end_without_reordering_locals`
-- [ ] 8.5 GREEN registrar en composition root tras discovery.
-- [ ] 8.6 RED tool MCP pasa por el mismo gate/policy que las locales. Test: `tests/agent/test_loop.py::test_mcp_tool_passes_through_same_gate_and_policy`
-- [ ] 8.7 RED transporte no-stdio (p.ej. HTTP/OAuth) se rechaza con error claro, sin intentar OAuth. Test: `tests/tools/test_mcp.py::test_non_stdio_transport_rejected_with_clear_error`
-- [ ] 8.8 GREEN validar config: solo stdio soportado, resto → error explícito.
-- [ ] 8.9 Suite completa verde (pytest+ruff+mypy+lint-imports) tras Lote 8.
+- [x] 8.1 Añadir dependencia SDK `mcp` a `pyproject.toml` (única, aislada a este lote).
+- [x] 8.2 RED `MCPTool` satisface `Protocol Tool`; único módulo que importa `mcp`. Test: `tests/tools/test_mcp.py::test_only_mcp_module_imports_mcp_sdk`
+- [x] 8.3 GREEN `tools/mcp.py::MCPTool` + parseo `.ErickFP/mcp.json` (command/args, stdio).
+- [x] 8.4 RED tool MCP se registra en el mismo registry, sin reordenar las locales. Test: `tests/tools/test_registry.py::test_mcp_tool_appended_at_end_without_reordering_locals`
+- [x] 8.5 GREEN registrar en composition root tras discovery.
+- [x] 8.6 RED tool MCP pasa por el mismo gate/policy que las locales. Test: `tests/agent/test_loop.py::test_mcp_tool_passes_through_same_gate_and_policy`
+- [x] 8.7 RED transporte no-stdio (p.ej. HTTP/OAuth) se rechaza con error claro, sin intentar OAuth. Test: `tests/tools/test_mcp.py::test_non_stdio_transport_rejected_with_clear_error`
+- [x] 8.8 GREEN validar config: solo stdio soportado, resto → error explícito.
+- [x] 8.9 Suite completa verde (pytest+ruff+mypy+lint-imports) tras Lote 8: pytest 243 passed, ruff clean, mypy clean (47 files), lint-imports "1 kept, 0 broken".
 
 ## Lote 9 — Verificación final y smoke E2E
 

@@ -8,6 +8,8 @@ tarea 5.8 (mas abajo en este archivo) agrega la prueba de integracion con las
 3 tools reales una vez existen.
 """
 
+from erickfp.api.types import ToolDef
+from erickfp.tools.mcp import MCPTool
 from erickfp.tools.registry import ToolRegistry
 from tests.support import FakeTool
 
@@ -75,3 +77,39 @@ def test_module_level_registry_singleton_has_the_three_mvp_tools_registered() ->
     names = [d.name for d in module_registry.definitions()]
     mvp_names_in_order = [name for name in names if name in {"bash", "read_file", "write_file"}]
     assert mvp_names_in_order == ["bash", "read_file", "write_file"]
+
+
+def test_mcp_tool_appended_at_end_without_reordering_locals() -> None:
+    """Lote 8 harness-v0-2 (spec mcp-support, Requirement 'Tool MCP
+    satisface la interfaz Tool existente', Scenario 'Tool MCP descubierta
+    se registra como cualquier tool local'): una `MCPTool` (Decision 8) se
+    registra en el MISMO registry que las tools locales, al final, SIN
+    reordenar ninguna de las ya registradas -- indistinguible en forma de
+    `bash`/`read_file`/`write_file` para el registry."""
+    class _FakeMCPSession:
+        def call_tool(self, name: str, arguments: dict) -> tuple[str, bool]:
+            return ("ok", False)
+
+    registry = ToolRegistry()
+    registry.register(FakeTool(name="bash"))
+    registry.register(FakeTool(name="read_file"))
+    registry.register(FakeTool(name="write_file"))
+
+    mcp_tool = MCPTool(
+        _FakeMCPSession(),
+        ToolDef(
+            name="git_status",
+            description="tool remota MCP",
+            input_schema={"type": "object", "properties": {}},
+            required=[],
+        ),
+    )
+    registry.register(mcp_tool)
+
+    assert [d.name for d in registry.definitions()] == [
+        "bash",
+        "read_file",
+        "write_file",
+        "git_status",
+    ]
+    assert registry.get("git_status") is mcp_tool

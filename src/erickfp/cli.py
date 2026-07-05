@@ -40,6 +40,7 @@ from erickfp.provider.base import Provider, ProviderError
 from erickfp.provider.litellm_gemini import DEFAULT_MODEL, LiteLLMGeminiProvider
 from erickfp.subagents.delegate import DelegateTool
 from erickfp.subagents.research import Research
+from erickfp.tools.mcp import discover_tools
 from erickfp.tools.recall import RecallTool
 from erickfp.tools.registry import ToolRegistry
 from erickfp.tools.registry import registry as tool_registry
@@ -503,6 +504,15 @@ def chat() -> None:
     # registra en `tools/` -- que nunca importa `agent`/`subagents` -- solo
     # AQUI, en el composition root, igual que `RecallTool`/`MCPTool`.
     tool_registry.register(DelegateTool(Research(provider, hook_manager=hook_manager)))
+    # MCPTool (Lote 8, spec mcp-support, design.md D8): descubrimiento en
+    # el composition root, DESPUES de las tools locales/recall/delegate --
+    # `discover_tools` NUNCA lanza (config ausente o malformada, o un
+    # servidor MCP individual que no arranca, se avisa via `console.print`
+    # y el chat sigue con las tools locales, spec 'el chat arranca igual
+    # sin tools MCP'). Cada `MCPTool` se registra al final, sin reordenar
+    # ninguna tool ya registrada (mismo `ToolRegistry` compartido).
+    for mcp_tool in discover_tools(root, warn=lambda msg: console.print(f"[{_RED}]{msg}[/{_RED}]")):
+        tool_registry.register(mcp_tool)
 
     try:
         run_chat_session(

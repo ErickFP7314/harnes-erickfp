@@ -14,8 +14,9 @@ import pytest
 from erickfp.agent.loop import run_turn
 from erickfp.agent.policy import AllowList, AlwaysAsk, AskOnce
 from erickfp.agent.tokens import TokenTracker
-from erickfp.api.types import Block, Entry, Message, Response, Usage
+from erickfp.api.types import Block, Entry, Message, Response, ToolDef, Usage
 from erickfp.compaction.base import CompactionStrategy
+from erickfp.tools.mcp import MCPTool
 from erickfp.tools.recall import RecallTool
 from erickfp.tools.registry import ToolRegistry
 from tests.support import FakeTool, MockProvider
@@ -274,6 +275,78 @@ def test_recall_tool_passes_through_gate_like_other_tools(monkeypatch) -> None:
     assert tool_result.type == "tool_result"
     assert tool_result.is_error is False
     assert "dato recuperado de prueba" in tool_result.tool_result
+
+
+class _FakeMCPSession:
+    """Doble ad-hoc (Lote 8, spec mcp-support): satisface
+    `.call_tool(name, arguments)` sin depender del SDK real `mcp` ni de un
+    servidor MCP real -- mismo patron de duck typing que `_FakeRecallSource`
+    de este mismo archivo."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+
+    def call_tool(self, name: str, arguments: dict) -> tuple[str, bool]:
+        self.calls.append((name, arguments))
+        return ("cambios: 2 archivos", False)
+
+
+def test_mcp_tool_passes_through_same_gate_and_policy(monkeypatch) -> None:
+    """Lote 8 harness-v0-2 (spec mcp-support, Requirement 'Mismo gate y
+    policy que las tools locales', Scenario 'Tool MCP pasa por el gate'):
+    una `MCPTool` real (sin monkeypatchear `run_tool_with_gate`) consulta
+    la policy activa y solo invoca `session.call_tool(...)` a traves del
+    gate -- exactamente el mismo camino que `bash`/`read_file`/
+    `write_file`/`recall`, sin ruta de ejecucion alternativa."""
+    monkeypatch.setattr("erickfp.agent.gate.read_line", lambda prompt: "y")
+
+    session = _FakeMCPSession()
+    tool = MCPTool(
+        session,
+        ToolDef(
+            name="git_status",
+            description="tool remota MCP de prueba",
+            input_schema={"type": "object", "properties": {}},
+            required=[],
+        ),
+    )
+    tools = ToolRegistry()
+    tools.register(tool)
+    policy = AllowList({"git_status"})
+
+    decide_calls: list[tuple[str, str]] = []
+    original_decide = policy.decide
+
+    def spy_decide(tool_name: str, tool_input: str) -> str:
+        decide_calls.append((tool_name, tool_input))
+        return original_decide(tool_name, tool_input)
+
+    monkeypatch.setattr(policy, "decide", spy_decide)
+
+    tool_input = '{"path": "."}'
+    first_response = Response(
+        content=[
+            Block(
+                type="tool_use",
+                tool_use_id="call-1",
+                tool_name="git_status",
+                tool_input=tool_input,
+            )
+        ],
+        stop_reason="tool_use",
+    )
+    second_response = Response(content=[Block(type="text", text="listo")], stop_reason="end_turn")
+    provider = MockProvider(responses=[first_response, second_response])
+    messages = [Message(role="user", content=[Block(type="text", text="que cambio?")])]
+
+    result = run_turn(provider, tools, messages, tools.definitions(), policy=policy)
+
+    assert decide_calls == [("git_status", tool_input)]  # el gate consulto la policy
+    assert session.calls == [("git_status", {"path": "."})]  # unica ejecucion, via el gate
+    tool_result = result[-2].content[0]
+    assert tool_result.type == "tool_result"
+    assert tool_result.is_error is False
+    assert "cambios: 2 archivos" in tool_result.tool_result
 
 
 class _SpyCompactionStrategy:
