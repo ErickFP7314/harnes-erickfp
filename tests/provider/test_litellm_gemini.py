@@ -63,7 +63,7 @@ def test_send_translates_text_response_to_response_and_block(
     response = provider.send(messages, [])
 
     assert isinstance(response, Response)
-    assert response.stop_reason == "stop"
+    assert response.stop_reason == "end_turn"
     assert len(response.content) == 1
     assert isinstance(response.content[0], Block)
     assert response.content[0].type == "text"
@@ -96,7 +96,7 @@ def test_send_translates_tool_call_response_to_tool_use_block(
 
     response = provider.send(messages, tools)
 
-    assert response.stop_reason == "tool_calls"
+    assert response.stop_reason == "tool_use"
     block = response.content[0]
     assert block.type == "tool_use"
     assert block.tool_name == "bash"
@@ -171,6 +171,55 @@ def test_response_usage_is_domain_type_no_litellm_leak(
 
     assert type(response.usage) is Usage  # nunca el SimpleNamespace/tipo nativo de litellm
     assert response.usage == Usage(prompt=12, completion=8, total=20)
+
+
+@pytest.mark.parametrize(
+    ("raw_finish_reason", "expected_stop_reason"),
+    [
+        ("tool_calls", "tool_use"),
+        ("stop", "end_turn"),
+        ("length", "end_turn"),
+        (None, "end_turn"),
+    ],
+)
+def test_stop_reason_is_domain_type_no_litellm_leak(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_finish_reason: str | None,
+    expected_stop_reason: str,
+) -> None:
+    """Hallazgo del smoke E2E real (Lote 9, tasks.md 9.2): el adapter
+    reenviaba `choice.finish_reason` crudo de litellm (convencion
+    OpenAI-style: "stop"/"tool_calls"/"length"/...) tal cual en
+    `Response.stop_reason`, mientras que `agent/agent.py::Agent.run_turn`
+    (y TODOS los dobles de prueba de `tests/agent/`) asumen la convencion
+    canonica de dominio (Anthropic-style: "tool_use"/"end_turn") ya usada
+    en `Block.type`. Contra un proveedor fake esto nunca fallaba (los
+    fakes ya devuelven el string canonico), pero contra Gemini/Gemma real
+    el mismatch hacia que `Agent.run_turn` SIEMPRE devolviera el turno
+    inmediatamente (nunca `== "tool_use"`), saltandose el permission gate
+    por completo incluso cuando el modelo SI pedia una tool real -- ninguna
+    tool se ejecutaba jamas contra el modelo real, aunque los 243 tests con
+    dobles seguian en verde. Mismo principio ya aplicado a `Usage`
+    (`test_response_usage_is_domain_type_no_litellm_leak`) y
+    `Block.provider_metadata` (Decision 2): NINGUN string crudo de litellm
+    debe cruzar hacia el llamador sin normalizar."""
+    message = SimpleNamespace(content="hola", tool_calls=None, provider_specific_fields=None)
+    choice = SimpleNamespace(message=message, finish_reason=raw_finish_reason)
+    raw = SimpleNamespace(choices=[choice], usage=None)
+
+    def fake_completion(**kwargs: Any) -> SimpleNamespace:
+        return raw
+
+    import erickfp.provider.litellm_gemini as adapter_module
+
+    monkeypatch.setattr(adapter_module.litellm, "completion", fake_completion)
+
+    provider = LiteLLMGeminiProvider()
+    messages = [Message(role="user", content=[Block(type="text", text="hola")])]
+
+    response = provider.send(messages, [])
+
+    assert response.stop_reason == expected_stop_reason
 
 
 def test_response_usage_is_none_when_raw_has_no_usage_attribute(

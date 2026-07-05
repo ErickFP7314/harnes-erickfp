@@ -28,11 +28,11 @@ phases:
     artifact: openspec/changes/harness-v0-2/tasks.md
     engram: sdd/harness-v0-2/tasks
   apply:
-    status: in_progress
+    status: done
     depends_on: [tasks]
     engram: sdd/harness-v0-2/apply-progress
-    batches_done: [1, 2, 3, 4, 5, 6, 7, 8]
-    next_batch: 9
+    batches_done: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    next_batch: null
   verify:
     status: pending
     depends_on: [apply]
@@ -74,5 +74,7 @@ delivery_batches:
     name: subagentes
   - id: 8
     name: mcp-support
+  - id: 9
+    name: verificacion-final-smoke-e2e
 
-next_recommended: [sdd-apply]  # Lote 9 (verificacion final + smoke E2E) sigue pendiente
+next_recommended: [sdd-verify]  # apply completo (9/9 lotes); ver docs/smoke-e2e-v0-2.md

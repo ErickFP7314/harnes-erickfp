@@ -62,6 +62,25 @@ _DEFAULT_MAX_ATTEMPTS = 2
 _DEFAULT_BACKOFF_SECONDS = 2.0
 _TRANSIENT_ERROR_MARKERS = ("500", "INTERNAL")
 
+# Normalizacion de `stop_reason` (hallazgo del smoke E2E real, Lote 9 harness-
+# v0-2, tasks.md 9.2, design.md Decision 2): litellm reenvia `finish_reason`
+# en la convencion nativa OpenAI-style ("stop"/"tool_calls"/"length"/...),
+# pero el resto del dominio (agent/agent.py::Agent.run_turn, TODOS los
+# Provider fakes de tests/agent/) asume la convencion canonica Anthropic-
+# style ya usada en `Block.type` ("tool_use"/"end_turn"). Sin esta tabla, el
+# string crudo de litellm cruzaba intacto hacia `Response.stop_reason` --
+# contra un fake esto nunca fallaba (los fakes ya emiten el string
+# canonico), pero contra Gemini/Gemma real el mismatch hacia que
+# `Agent.run_turn` (`stop_reason != "tool_use"`) SIEMPRE devolviera el turno
+# de inmediato, saltandose el permission gate por completo aunque el modelo
+# SI pidiera una tool real. Cualquier `finish_reason` no listado (valor
+# nuevo de litellm, o ausente) cae a "end_turn" -- el mismo default seguro
+# que ya tenia esta funcion antes de esta tabla.
+_STOP_REASON_MAP: dict[str, str] = {
+    "tool_calls": "tool_use",
+    "stop": "end_turn",
+}
+
 
 class LiteLLMGeminiProvider:
     """Adapter `Provider` (Decision 5) que traduce hacia/desde LiteLLM + Gemini."""
@@ -224,7 +243,8 @@ class LiteLLMGeminiProvider:
                     Block(type="text", provider_metadata={"thought_signatures": thought_signatures})
                 )
 
-        stop_reason = getattr(choice, "finish_reason", None) or "end_turn"
+        raw_finish_reason = getattr(choice, "finish_reason", None) or "end_turn"
+        stop_reason = _STOP_REASON_MAP.get(raw_finish_reason, "end_turn")
         return Response(content=blocks, stop_reason=stop_reason, usage=self._to_usage(raw))
 
     def _to_usage(self, raw: Any) -> Usage | None:
