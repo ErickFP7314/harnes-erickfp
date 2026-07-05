@@ -40,7 +40,7 @@ from typing import Any
 
 import litellm
 
-from erickfp.api.types import Block, Message, Response, ToolDef
+from erickfp.api.types import Block, Message, Response, ToolDef, Usage
 from erickfp.provider.base import ProviderError
 
 # ADR-001 (2026-07-03): default elegido por el usuario con evidencia del spike
@@ -225,4 +225,18 @@ class LiteLLMGeminiProvider:
                 )
 
         stop_reason = getattr(choice, "finish_reason", None) or "end_turn"
-        return Response(content=blocks, stop_reason=stop_reason)
+        return Response(content=blocks, stop_reason=stop_reason, usage=self._to_usage(raw))
+
+    def _to_usage(self, raw: Any) -> Usage | None:
+        """Traduce `raw.usage` (forma nativa de litellm) al tipo de dominio
+        `Usage` (Lote 3 harness-v0-2, tarea 3.13, design.md Decision 6).
+        `raw.usage` puede no existir (algunos mocks de prueba no lo modelan)
+        -- en ese caso retorna `None` en vez de lanzar."""
+        raw_usage = getattr(raw, "usage", None)
+        if raw_usage is None:
+            return None
+        return Usage(
+            prompt=getattr(raw_usage, "prompt_tokens", 0) or 0,
+            completion=getattr(raw_usage, "completion_tokens", 0) or 0,
+            total=getattr(raw_usage, "total_tokens", 0) or 0,
+        )

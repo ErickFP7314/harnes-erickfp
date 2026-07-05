@@ -27,6 +27,7 @@ gate; despues de resolverse (con o sin gate) se dispara `PostToolUse`.
 from __future__ import annotations
 
 from erickfp.agent.gate import run_tool_with_gate
+from erickfp.agent.tokens import TokenTracker
 from erickfp.api.types import Block, Message, ToolDef
 from erickfp.hooks.manager import HookManager, PhaseContext
 from erickfp.provider.base import Provider
@@ -40,17 +41,25 @@ def run_turn(
     tool_defs: list[ToolDef],
     hook_manager: HookManager | None = None,
     ctx: PhaseContext | None = None,
+    tracker: TokenTracker | None = None,
 ) -> list[Message]:
     """Ejecuta un turno completo hasta `stop_reason != "tool_use"`.
 
     Retorna la lista de mensajes actualizada (incluye el/los turnos del
     asistente y, si hubo `tool_use`, los `tool_result` correspondientes).
     No muta la lista `messages` recibida -- siempre retorna una nueva.
+
+    `tracker` (Lote 3 harness-v0-2, tarea 3.15, design.md Decision 6) es
+    OPCIONAL (default `None`, igual patron que `hook_manager`/`ctx`): si se
+    inyecta, cada respuesta real del Provider dentro del turno reporta su
+    `usage` -- incluye llamadas intermedias con `tool_use`, no solo la final.
     """
     current_messages = list(messages)
 
     while True:
         response = provider.send(current_messages, tool_defs)
+        if tracker is not None:
+            tracker.add(response.usage)
         current_messages = [
             *current_messages,
             Message(role="assistant", content=response.content),

@@ -27,7 +27,8 @@ from rich.console import Console
 
 from erickfp.agent.gate import read_line as gate_read_line
 from erickfp.agent.loop import run_turn
-from erickfp.api.types import Block, Message
+from erickfp.agent.tokens import TokenTracker
+from erickfp.api.types import Block, Message, ToolDef
 from erickfp.cogito.artifacts import ArtifactMissingError
 from erickfp.cogito.orchestrator import CicloCogitoOrchestrator, PhaseBlockedError, PhaseOutcome
 from erickfp.hooks.adr_traceability import AdrTraceabilityHook
@@ -35,7 +36,7 @@ from erickfp.hooks.core_guard import CoreGuardHook
 from erickfp.hooks.manager import HookManager, PhaseContext
 from erickfp.memory.sqlite_store import SqliteStore
 from erickfp.provider.base import Provider, ProviderError
-from erickfp.provider.litellm_gemini import LiteLLMGeminiProvider
+from erickfp.provider.litellm_gemini import DEFAULT_MODEL, LiteLLMGeminiProvider
 from erickfp.tools.registry import ToolRegistry
 from erickfp.tools.registry import registry as tool_registry
 from erickfp.ui.banner import render_banner
@@ -171,34 +172,168 @@ def build_system_context(root: Path, store: PreambleSource) -> str:
     return "\n\n---\n\n".join(sections)
 
 
+# -- Slash commands (Lote 3, tareas 3.1-3.11, design.md Decision D4) --------
+#
+# Mini-registry `dict[str, handler]` (SlashRegistry): entradas que empiecen
+# con "/" NUNCA llegan al Provider -- se interceptan al inicio del loop REPL
+# y se resuelven localmente (`handler(...)` + `continue`), comando conocido
+# o no. `_SLASH_HELP` documenta cada comando para `/help`; el nombre (sin la
+# barra) es la clave tanto de `_SLASH_HELP` como del registry que arma
+# `_build_slash_registry` (necesita closures sobre el estado del loop, por
+# eso se construye DENTRO de `run_chat_session`, no a nivel de modulo).
+_SLASH_HELP: dict[str, str] = {
+    "help": "lista los comandos disponibles",
+    "model": "muestra el modelo activo, o lo cambia con /model <nombre>",
+    "tools": "lista las tools registradas (orden estable del registry)",
+    "clear": "vacia el historial de la sesion en curso",
+    "tokens": "muestra tokens acumulados y costo estimado de la sesion",
+}
+
+# -- Token viewer (Lote 3, tareas 3.16-3.19, design.md Decision D6) ---------
+#
+# Tabla de pricing USD por 1000 tokens. `DEFAULT_MODEL` (Gemma free tier) se
+# reporta como "gratis" en vez de un numero -- no tiene costo real que
+# calcular. Un modelo ausente de esta tabla reporta "desconocido/0" (nunca
+# un error): el pricing de modelos de terceros no siempre esta disponible.
+_FREE_TIER_MODELS = {DEFAULT_MODEL}
+_MODEL_PRICING_USD_PER_1K: dict[str, tuple[float, float]] = {
+    # Ejemplo de modelo con pricing real y no-gratis (referenciado ya en el
+    # docstring de litellm_gemini.py como alternativa a Gemma 4), para que
+    # el calculo de costo tenga un caso numerico ejercitado de verdad.
+    "gemini/gemini-3.5-flash": (0.0005, 0.0015),
+}
+
+
+def _format_cost(model_name: str, tracker: TokenTracker) -> str:
+    """Traduce el estado de `tracker` + el modelo activo a un string de
+    costo (spec token-viewer, Requirement '/tokens reporta uso y costo').
+    """
+    if model_name in _FREE_TIER_MODELS:
+        return "—/gratis"
+    pricing = _MODEL_PRICING_USD_PER_1K.get(model_name)
+    if pricing is None:
+        return "desconocido/0"
+    prompt_price, completion_price = pricing
+    cost = (tracker.prompt_tokens / 1000) * prompt_price + (
+        tracker.completion_tokens / 1000
+    ) * completion_price
+    return f"${cost:.6f}"
+
+
+class _ReplState:
+    """Estado mutable del loop REPL (historial + bandera de primer turno).
+    Objeto simple (no dataclass) para que `/clear` (design.md D4) pueda
+    reasignar sus atributos desde una closure sin depender de `nonlocal`
+    sobre variables de `run_chat_session` -- las mismas instancia se
+    comparte entre el loop y el SlashRegistry."""
+
+    def __init__(self) -> None:
+        self.messages: list[Message] = []
+        self.first_turn: bool = True
+
+
+def _build_slash_registry(
+    provider: Provider,
+    tools: ToolRegistry,
+    tool_defs: list[ToolDef],
+    console: Console,
+    tracker: TokenTracker,
+    state: _ReplState,
+) -> dict[str, Callable[[str], None]]:
+    """Arma el SlashRegistry (design.md D4) con closures sobre el estado
+    mutable del loop REPL (`state.messages`/`state.first_turn`) -- se
+    reconstruye por sesion dentro de `run_chat_session`, no a nivel de
+    modulo, porque cada sesion tiene su propio historial."""
+
+    def _handle_help(_argument: str) -> None:
+        lines = [f"/{name} -- {desc}" for name, desc in _SLASH_HELP.items()]
+        console.print(f"[{_CYAN}]Comandos disponibles:[/{_CYAN}]\n" + "\n".join(lines))
+
+    def _handle_tools(_argument: str) -> None:
+        names = ", ".join(tool_def.name for tool_def in tool_defs)
+        console.print(f"[{_CYAN}]tools registradas:[/{_CYAN}] {names}")
+
+    def _handle_clear(_argument: str) -> None:
+        state.messages = []
+        state.first_turn = True
+        console.print(f"[{_GREEN}]Historial de la sesion limpiado.[/{_GREEN}]")
+
+    def _handle_model(argument: str) -> None:
+        if argument:
+            provider.set_model(argument)
+            console.print(f"[{_GREEN}]Modelo activo: {provider.model()}[/{_GREEN}]")
+        else:
+            console.print(f"[{_CYAN}]Modelo activo: {provider.model()}[/{_CYAN}]")
+
+    def _handle_tokens(_argument: str) -> None:
+        cost = _format_cost(provider.model(), tracker)
+        console.print(
+            f"[{_CYAN}]tokens[/{_CYAN}] entrada={tracker.prompt_tokens} "
+            f"salida={tracker.completion_tokens} total={tracker.total_tokens} "
+            f"costo={cost}"
+        )
+
+    return {
+        "help": _handle_help,
+        "tools": _handle_tools,
+        "clear": _handle_clear,
+        "model": _handle_model,
+        "tokens": _handle_tokens,
+    }
+
+
 def run_chat_session(
     provider: Provider,
     tools: ToolRegistry,
     console: Console,
     system_context: str,
     read_line: Callable[[str], str] = gate_read_line,
+    tracker: TokenTracker | None = None,
 ) -> None:
     """Bucle REPL (spec agent-loop, Requirement 'Loop REPL con Provider'):
     un turno de texto plano por iteracion. El contexto de sistema se
     antepone SOLO en el primer turno -- no se re-inyecta en cada mensaje.
     Termina con "salir"/"exit"/"quit".
+
+    Comandos slash (spec slash-commands, design.md Decision D4): cualquier
+    entrada que empiece con "/" se intercepta ANTES de tocar el Provider --
+    comando conocido o no (Requirement 'Entradas con "/" nunca se envian al
+    modelo'). `/clear` reinyecta el contexto raiz en el turno siguiente
+    (`state.first_turn = True`).
     """
-    messages: list[Message] = []
     tool_defs = tools.definitions()
-    first_turn = True
+    active_tracker = tracker if tracker is not None else TokenTracker()
+    state = _ReplState()
+    slash_registry = _build_slash_registry(
+        provider, tools, tool_defs, console, active_tracker, state
+    )
 
     while True:
         user_input = read_line("tu> ")
         if user_input.strip().lower() in _EXIT_COMMANDS:
             return
 
+        if user_input.startswith("/"):
+            command, _, argument = user_input[1:].partition(" ")
+            handler = slash_registry.get(command.strip().lower())
+            if handler is None:
+                console.print(
+                    f"[{_RED}]Comando desconocido: /{command}. "
+                    f"Usa /help para ver los comandos disponibles.[/{_RED}]"
+                )
+            else:
+                handler(argument.strip())
+            continue
+
+        messages = state.messages
+        first_turn = state.first_turn
         content = [Block(type="text", text=system_context)] if first_turn else []
         content.append(Block(type="text", text=user_input))
         previous_messages = messages
         messages = [*messages, Message(role="user", content=content)]
 
         try:
-            messages = run_turn(provider, tools, messages, tool_defs)
+            messages = run_turn(provider, tools, messages, tool_defs, tracker=active_tracker)
         except ProviderError as exc:
             # Hotfix 2026-07-04: un fallo definitivo del proveedor (p. ej.
             # 500 persistente tras agotar el retry) NO mata el REPL. Se
@@ -213,7 +348,8 @@ def run_chat_session(
             messages = previous_messages
             continue
 
-        first_turn = False
+        state.messages = messages
+        state.first_turn = False
 
         last_message = messages[-1]
         for block in last_message.content:
@@ -243,7 +379,10 @@ def chat() -> None:
         raise typer.Exit(code=1)
 
     render_banner(console)
-    console.print(f"[{_CYAN}]ErickFP chat -- Ctrl+D o 'salir' para terminar.[/{_CYAN}]")
+    console.print(
+        f"[{_CYAN}]ErickFP chat -- Ctrl+D o 'salir' para terminar. "
+        f"Escribe /help para ver los comandos disponibles.[/{_CYAN}]"
+    )
 
     system_context = build_system_context(root, SqliteStore(root=root))
     provider = _build_provider()

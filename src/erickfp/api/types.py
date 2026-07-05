@@ -49,9 +49,22 @@ class ToolDef:
 
 
 @dataclass
+class Usage:
+    """Conteo de tokens de un turno (Decision 6 del design harness-v0-2:
+    token-viewer). Tipo de dominio propio -- el adapter LiteLLM lo llena a
+    partir de `raw.usage`, pero ningun tipo nativo de litellm cruza esta
+    frontera (mismo axioma que `Block.provider_metadata`, Decision 2)."""
+
+    prompt: int = 0
+    completion: int = 0
+    total: int = 0
+
+
+@dataclass
 class Response:
     content: list[Block]
     stop_reason: str
+    usage: Usage | None = None
 
 
 @dataclass

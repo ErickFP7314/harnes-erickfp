@@ -10,7 +10,8 @@ se ejecuta sin pasar por el gate').
 from __future__ import annotations
 
 from erickfp.agent.loop import run_turn
-from erickfp.api.types import Block, Message, Response
+from erickfp.agent.tokens import TokenTracker
+from erickfp.api.types import Block, Message, Response, Usage
 from erickfp.tools.registry import ToolRegistry
 from tests.support import FakeTool, MockProvider
 
@@ -111,3 +112,53 @@ def test_unknown_tool_returns_is_error_result_without_raising(monkeypatch) -> No
     assert tool_result.is_error is True
     assert "tool_que_no_existe" in tool_result.tool_result
     assert result[-1].content[0].text == "listo"  # el loop continua sin crashear
+
+
+def test_run_turn_reports_usage_to_tracker_each_turn(monkeypatch) -> None:
+    """Lote 3, tarea 3.15 (design.md Decision 6): cada respuesta del
+    Provider dentro del turno reporta su `usage` al `TokenTracker` inyectado
+    -- un turno con una tool call intermedia reporta 2 veces (una por cada
+    llamada real a `provider.send`), acumulando ambas."""
+    monkeypatch.setattr(
+        "erickfp.agent.loop.run_tool_with_gate",
+        lambda tool, tool_use: Block(
+            type="tool_result", tool_use_id=tool_use.tool_use_id, tool_result="ok"
+        ),
+    )
+    tracker = TokenTracker()
+    first_response = Response(
+        content=[
+            Block(type="tool_use", tool_use_id="call-1", tool_name="alpha", tool_input="{}")
+        ],
+        stop_reason="tool_use",
+        usage=Usage(prompt=10, completion=2, total=12),
+    )
+    second_response = Response(
+        content=[Block(type="text", text="listo")],
+        stop_reason="end_turn",
+        usage=Usage(prompt=15, completion=3, total=18),
+    )
+    tool = FakeTool(name="alpha")
+    tools = ToolRegistry()
+    tools.register(tool)
+    provider = MockProvider(responses=[first_response, second_response])
+    messages = [Message(role="user", content=[Block(type="text", text="hazlo")])]
+
+    run_turn(provider, tools, messages, tools.definitions(), tracker=tracker)
+
+    assert tracker.prompt_tokens == 25
+    assert tracker.completion_tokens == 5
+    assert tracker.total_tokens == 30
+
+
+def test_run_turn_without_tracker_keeps_previous_behavior() -> None:
+    """Retrocompatibilidad: `tracker=None` (default) no cambia el
+    comportamiento previo -- ninguna prueba existente deberia romperse."""
+    provider = MockProvider(
+        responses=[Response(content=[Block(type="text", text="hola")], stop_reason="end_turn")]
+    )
+    messages = [Message(role="user", content=[Block(type="text", text="hola")])]
+
+    result = run_turn(provider, ToolRegistry(), messages, [])
+
+    assert result[-1].content[0].text == "hola"

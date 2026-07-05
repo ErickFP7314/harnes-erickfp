@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from erickfp.api.types import Block, Message, Response, ToolDef
+from erickfp.api.types import Block, Message, Response, ToolDef, Usage
 from erickfp.provider.litellm_gemini import DEFAULT_MODEL, LiteLLMGeminiProvider
 
 
@@ -137,6 +137,57 @@ def test_send_passes_tools_translated_to_litellm_function_schema(
             },
         }
     ]
+
+
+def test_response_usage_is_domain_type_no_litellm_leak(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Lote 3, tarea 3.12 (design.md Decision 6): el adapter traduce
+    `raw.usage` (forma nativa de litellm) al tipo de dominio `Usage` --
+    ningun objeto propio de litellm cruza hacia el llamador, igual que
+    `Block.provider_metadata` (Decision 2)."""
+    raw_usage = SimpleNamespace(prompt_tokens=12, completion_tokens=8, total_tokens=20)
+    message = SimpleNamespace(
+        content="hola desde gemini", tool_calls=None, provider_specific_fields=None
+    )
+    choice = SimpleNamespace(message=message, finish_reason="stop")
+    raw = SimpleNamespace(choices=[choice], usage=raw_usage)
+
+    def fake_completion(**kwargs: Any) -> SimpleNamespace:
+        return raw
+
+    import erickfp.provider.litellm_gemini as adapter_module
+
+    monkeypatch.setattr(adapter_module.litellm, "completion", fake_completion)
+
+    provider = LiteLLMGeminiProvider()
+    messages = [Message(role="user", content=[Block(type="text", text="hola")])]
+
+    response = provider.send(messages, [])
+
+    assert type(response.usage) is Usage  # nunca el SimpleNamespace/tipo nativo de litellm
+    assert response.usage == Usage(prompt=12, completion=8, total=20)
+
+
+def test_response_usage_is_none_when_raw_has_no_usage_attribute(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Complemento del RED anterior: si `raw` no trae `usage` (algunos mocks
+    de prueba no lo modelan), el adapter no lanza -- retorna `usage=None`."""
+
+    def fake_completion(**kwargs: Any) -> SimpleNamespace:
+        return _raw_text_response("sin usage")
+
+    import erickfp.provider.litellm_gemini as adapter_module
+
+    monkeypatch.setattr(adapter_module.litellm, "completion", fake_completion)
+
+    provider = LiteLLMGeminiProvider()
+    messages = [Message(role="user", content=[Block(type="text", text="hola")])]
+
+    response = provider.send(messages, [])
+
+    assert response.usage is None
 
 
 def test_send_with_no_tools_passes_none_to_litellm(monkeypatch: pytest.MonkeyPatch) -> None:
