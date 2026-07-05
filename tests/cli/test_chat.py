@@ -134,7 +134,12 @@ def test_chat_startup_renders_banner_and_uses_decorated_input(
 
     captured: dict[str, object] = {}
 
-    def fake_run_chat_session(provider, tools, console, system_context, read_line=None):
+    def fake_run_chat_session(
+        provider, tools, console, system_context, read_line=None, hook_manager=None
+    ):
+        # `hook_manager` (Lote 4, spec permission-policy): `chat()` ahora
+        # inyecta un HookManager real con CoreGuardHook -- el stub solo
+        # necesita aceptar el kwarg, no lo ejercita en este test de UI.
         captured["read_line"] = read_line
 
     monkeypatch.setattr(cli_module, "run_chat_session", fake_run_chat_session)
@@ -172,6 +177,34 @@ def test_chat_without_init_reports_clear_error(tmp_path: Path, monkeypatch) -> N
     assert result.exit_code == 1
     assert "init" in result.output.lower()
     assert "Traceback" not in result.output
+
+
+def test_run_chat_session_wires_core_guard_via_chat_command(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Lote 4 harness-v0-2 (spec permission-policy, Requirement 'core_guard
+    prevalece sobre cualquier policy'): antes de este lote, `chat()` no
+    inyectaba ningun `hook_manager` en `run_chat_session` -- `core_guard`
+    solo corria en las fases del Ciclo Cogito. Este test fija que `chat()`
+    ahora construye un `HookManager([CoreGuardHook(root)])` real y lo pasa,
+    de modo que una escritura en `.ErickFP/core/*` durante el REPL de chat
+    se bloquea SIEMPRE, sin importar la policy (default `AlwaysAsk`)."""
+    monkeypatch.chdir(tmp_path)
+    runner.invoke(app, ["init"])
+
+    captured: dict[str, object] = {}
+
+    def fake_run_chat_session(
+        provider, tools, console, system_context, read_line=None, hook_manager=None
+    ):
+        captured["hook_manager"] = hook_manager
+
+    monkeypatch.setattr(cli_module, "run_chat_session", fake_run_chat_session)
+
+    result = runner.invoke(app, ["chat"])
+
+    assert result.exit_code == 0, result.output
+    assert captured["hook_manager"] is not None
 
 
 def test_repl_handles_eof_gracefully(tmp_path: Path, monkeypatch) -> None:

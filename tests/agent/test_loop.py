@@ -9,7 +9,10 @@ se ejecuta sin pasar por el gate').
 
 from __future__ import annotations
 
+import pytest
+
 from erickfp.agent.loop import run_turn
+from erickfp.agent.policy import AllowList, AlwaysAsk, AskOnce
 from erickfp.agent.tokens import TokenTracker
 from erickfp.api.types import Block, Message, Response, Usage
 from erickfp.tools.registry import ToolRegistry
@@ -162,3 +165,47 @@ def test_run_turn_without_tracker_keeps_previous_behavior() -> None:
     result = run_turn(provider, ToolRegistry(), messages, [])
 
     assert result[-1].content[0].text == "hola"
+
+
+@pytest.mark.parametrize(
+    "policy_factory",
+    [lambda: AlwaysAsk(), lambda: AllowList({"alpha"}), lambda: AskOnce()],
+)
+def test_no_tool_executes_without_gate_and_policy_regardless_of_policy_impl(
+    monkeypatch, policy_factory
+) -> None:
+    """Riesgo transversal (a) del Lote 4 (spec permission-policy): sin
+    importar la implementacion de `PermissionPolicy` inyectada, NO existe
+    ruta directa a `tool.execute()` -- `run_tool_with_gate` (la funcion real,
+    sin monkeypatchear) SIEMPRE consulta `policy.decide()` antes de resolver
+    la tool call."""
+    monkeypatch.setattr("erickfp.agent.gate.read_line", lambda prompt: "y")
+
+    tool = FakeTool(name="alpha")
+    tools = ToolRegistry()
+    tools.register(tool)
+    policy = policy_factory()
+
+    decide_calls: list[tuple[str, str]] = []
+    original_decide = policy.decide
+
+    def spy_decide(tool_name: str, tool_input: str) -> str:
+        decide_calls.append((tool_name, tool_input))
+        return original_decide(tool_name, tool_input)
+
+    monkeypatch.setattr(policy, "decide", spy_decide)
+
+    first_response = Response(
+        content=[
+            Block(type="tool_use", tool_use_id="call-1", tool_name="alpha", tool_input="{}")
+        ],
+        stop_reason="tool_use",
+    )
+    second_response = Response(content=[Block(type="text", text="listo")], stop_reason="end_turn")
+    provider = MockProvider(responses=[first_response, second_response])
+    messages = [Message(role="user", content=[Block(type="text", text="hazlo")])]
+
+    run_turn(provider, tools, messages, tools.definitions(), policy=policy)
+
+    assert decide_calls == [("alpha", "{}")]  # el gate SIEMPRE consulto la policy
+    assert tool.executed_with == ["{}"]  # unica ejecucion, siempre via el gate

@@ -27,6 +27,7 @@ from rich.console import Console
 
 from erickfp.agent.gate import read_line as gate_read_line
 from erickfp.agent.loop import run_turn
+from erickfp.agent.policy import PermissionPolicy
 from erickfp.agent.tokens import TokenTracker
 from erickfp.api.types import Block, Message, ToolDef
 from erickfp.cogito.artifacts import ArtifactMissingError
@@ -289,6 +290,8 @@ def run_chat_session(
     system_context: str,
     read_line: Callable[[str], str] = gate_read_line,
     tracker: TokenTracker | None = None,
+    hook_manager: HookManager | None = None,
+    policy: PermissionPolicy | None = None,
 ) -> None:
     """Bucle REPL (spec agent-loop, Requirement 'Loop REPL con Provider'):
     un turno de texto plano por iteracion. El contexto de sistema se
@@ -300,6 +303,13 @@ def run_chat_session(
     comando conocido o no (Requirement 'Entradas con "/" nunca se envian al
     modelo'). `/clear` reinyecta el contexto raiz en el turno siguiente
     (`state.first_turn = True`).
+
+    `hook_manager`/`policy` (Lote 4 harness-v0-2, spec permission-policy)
+    son OPCIONALES (default `None`, mismo patron que `tracker`): `chat()`
+    (composition root) inyecta un `HookManager([CoreGuardHook(root)])` real
+    para que `core_guard` este SIEMPRE activo tambien en el REPL de chat, no
+    solo en las fases del Ciclo Cogito -- `policy=None` preserva el
+    comportamiento identico al ciclo 1 (`AlwaysAsk` implicito en el gate).
     """
     tool_defs = tools.definitions()
     active_tracker = tracker if tracker is not None else TokenTracker()
@@ -307,6 +317,7 @@ def run_chat_session(
     slash_registry = _build_slash_registry(
         provider, tools, tool_defs, console, active_tracker, state
     )
+    ctx = PhaseContext(phase="chat") if hook_manager is not None else None
 
     while True:
         user_input = read_line("tu> ")
@@ -333,7 +344,16 @@ def run_chat_session(
         messages = [*messages, Message(role="user", content=content)]
 
         try:
-            messages = run_turn(provider, tools, messages, tool_defs, tracker=active_tracker)
+            messages = run_turn(
+                provider,
+                tools,
+                messages,
+                tool_defs,
+                hook_manager=hook_manager,
+                ctx=ctx,
+                tracker=active_tracker,
+                policy=policy,
+            )
         except ProviderError as exc:
             # Hotfix 2026-07-04: un fallo definitivo del proveedor (p. ej.
             # 500 persistente tras agotar el retry) NO mata el REPL. Se
@@ -386,10 +406,19 @@ def chat() -> None:
 
     system_context = build_system_context(root, SqliteStore(root=root))
     provider = _build_provider()
+    # core_guard SIEMPRE activo (Lote 4, spec permission-policy, Requirement
+    # 'core_guard prevalece sobre cualquier policy'): tambien en el REPL de
+    # chat, no solo en las fases del Ciclo Cogito (`_build_orchestrator`).
+    hook_manager = HookManager([CoreGuardHook(root)])
 
     try:
         run_chat_session(
-            provider, tool_registry, console, system_context, read_line=_decorated_read_line
+            provider,
+            tool_registry,
+            console,
+            system_context,
+            read_line=_decorated_read_line,
+            hook_manager=hook_manager,
         )
     except EOFError:
         console.print(f"\n[{_CYAN}]Hasta luego.[/{_CYAN}]")

@@ -22,11 +22,23 @@ bloquea la tool sin que el gate sea siquiera consultado (Requirement
 'Proteccion incondicional de core/*': el bloqueo no depende de la decision
 del humano). Si el hook aprueba, la tool sigue su camino normal hacia el
 gate; despues de resolverse (con o sin gate) se dispara `PostToolUse`.
+
+Permission policy (Lote 4 harness-v0-2, Decision 2 del design; spec
+permission-policy): `policy` es OPCIONAL (default `None`, mismo patron que
+`hook_manager`/`ctx`/`tracker`) y se threadea SOLO cuando se inyecta
+explicitamente -- si `policy is None` la llamada a `run_tool_with_gate`
+conserva su firma de 2 argumentos identica a los Lotes 1-3 (retrocompatibi-
+lidad bit-a-bit con toda prueba que monkeypatchea esa funcion). El orden es
+inamovible: `PreToolUse`/`core_guard` SIEMPRE se evalua antes de siquiera
+llegar al gate -- ninguna `PermissionPolicy` (incluidas `AllowList`/
+`AskOnce`) puede aprobar automaticamente lo que el core_guard ya denego
+(Requirement 'core_guard prevalece sobre cualquier policy').
 """
 
 from __future__ import annotations
 
 from erickfp.agent.gate import run_tool_with_gate
+from erickfp.agent.policy import PermissionPolicy
 from erickfp.agent.tokens import TokenTracker
 from erickfp.api.types import Block, Message, ToolDef
 from erickfp.hooks.manager import HookManager, PhaseContext
@@ -42,6 +54,7 @@ def run_turn(
     hook_manager: HookManager | None = None,
     ctx: PhaseContext | None = None,
     tracker: TokenTracker | None = None,
+    policy: PermissionPolicy | None = None,
 ) -> list[Message]:
     """Ejecuta un turno completo hasta `stop_reason != "tool_use"`.
 
@@ -99,7 +112,10 @@ def run_turn(
                     )
                     continue
 
-            result_blocks.append(run_tool_with_gate(tool, block))
+            if policy is not None:
+                result_blocks.append(run_tool_with_gate(tool, block, policy))
+            else:
+                result_blocks.append(run_tool_with_gate(tool, block))
 
             if hook_manager is not None and ctx is not None:
                 hook_manager.run("PostToolUse", ctx)
