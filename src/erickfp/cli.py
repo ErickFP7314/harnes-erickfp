@@ -38,6 +38,8 @@ from erickfp.hooks.manager import HookManager, PhaseContext
 from erickfp.memory.sqlite_store import SqliteStore
 from erickfp.provider.base import Provider, ProviderError
 from erickfp.provider.litellm_gemini import DEFAULT_MODEL, LiteLLMGeminiProvider
+from erickfp.subagents.delegate import DelegateTool
+from erickfp.subagents.research import Research
 from erickfp.tools.recall import RecallTool
 from erickfp.tools.registry import ToolRegistry
 from erickfp.tools.registry import registry as tool_registry
@@ -494,6 +496,13 @@ def chat() -> None:
     # compartido del proceso hace que `recall` este disponible como
     # cualquier otra tool, pasando por el mismo gate/policy.
     tool_registry.register(RecallTool(store))
+    # DelegateTool (Lote 7, spec subagents, design.md "Ciclo delegate"): el
+    # `Research` interno reutiliza el MISMO `provider`/`hook_manager` que el
+    # agente principal -- `core_guard` sigue activo dentro del subagente
+    # (Requirement 'core_guard sigue activo dentro del subagente'). Se
+    # registra en `tools/` -- que nunca importa `agent`/`subagents` -- solo
+    # AQUI, en el composition root, igual que `RecallTool`/`MCPTool`.
+    tool_registry.register(DelegateTool(Research(provider, hook_manager=hook_manager)))
 
     try:
         run_chat_session(

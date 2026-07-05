@@ -1,7 +1,7 @@
 """tests/agent/test_loop.py -- agent loop (spec agent-loop). Fase 6, tareas 6.5-6.6.
 
 Usa `MockProvider` (tests/support) para simular turnos sin red. Monkeypatchea
-`erickfp.agent.loop.run_tool_with_gate` para verificar que TODO `tool_use`
+`erickfp.agent.agent.run_tool_with_gate` para verificar que TODO `tool_use`
 pasa por el gate -- nunca hay una ruta que invoque `tool.execute()`
 directamente (Requirement 'Permission gate sin fuga', Scenario 'Ninguna tool
 se ejecuta sin pasar por el gate').
@@ -25,7 +25,7 @@ def test_no_tool_use_skips_gate(monkeypatch) -> None:
     """Scenario 'Turno sin tool use': texto puro no invoca el gate."""
     gate_calls: list[str] = []
     monkeypatch.setattr(
-        "erickfp.agent.loop.run_tool_with_gate",
+        "erickfp.agent.agent.run_tool_with_gate",
         lambda tool, tool_use: gate_calls.append(tool_use.tool_use_id) or Block(
             type="tool_result"
         ),
@@ -57,7 +57,7 @@ def test_every_tool_use_passes_through_gate_no_direct_path(monkeypatch) -> None:
             type="tool_result", tool_use_id=tool_use.tool_use_id, tool_result="ok", is_error=False
         )
 
-    monkeypatch.setattr("erickfp.agent.loop.run_tool_with_gate", fake_gate)
+    monkeypatch.setattr("erickfp.agent.agent.run_tool_with_gate", fake_gate)
 
     first_response = Response(
         content=[
@@ -87,7 +87,7 @@ def test_unknown_tool_returns_is_error_result_without_raising(monkeypatch) -> No
     `run_tool_with_gate`/`execute()` para esa tool)."""
     gate_calls: list[str] = []
     monkeypatch.setattr(
-        "erickfp.agent.loop.run_tool_with_gate",
+        "erickfp.agent.agent.run_tool_with_gate",
         lambda tool, tool_use: gate_calls.append(tool_use.tool_use_id) or Block(
             type="tool_result"
         ),
@@ -125,7 +125,7 @@ def test_run_turn_reports_usage_to_tracker_each_turn(monkeypatch) -> None:
     -- un turno con una tool call intermedia reporta 2 veces (una por cada
     llamada real a `provider.send`), acumulando ambas."""
     monkeypatch.setattr(
-        "erickfp.agent.loop.run_tool_with_gate",
+        "erickfp.agent.agent.run_tool_with_gate",
         lambda tool, tool_use: Block(
             type="tool_result", tool_use_id=tool_use.tool_use_id, tool_result="ok"
         ),

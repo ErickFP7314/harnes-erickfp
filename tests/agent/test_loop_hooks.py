@@ -21,7 +21,7 @@ def test_hook_deny_blocks_tool_before_gate_is_consulted(monkeypatch) -> None:
     gate: `run_tool_with_gate` (y por lo tanto `input()`) nunca se llama."""
     gate_calls: list[str] = []
     monkeypatch.setattr(
-        "erickfp.agent.loop.run_tool_with_gate",
+        "erickfp.agent.agent.run_tool_with_gate",
         lambda tool, tool_use: gate_calls.append(tool_use.tool_use_id) or Block(
             type="tool_result", is_error=False
         ),
@@ -66,7 +66,7 @@ def test_hook_allow_lets_tool_reach_the_gate(monkeypatch) -> None:
     normal hacia el gate."""
     gate_calls: list[str] = []
     monkeypatch.setattr(
-        "erickfp.agent.loop.run_tool_with_gate",
+        "erickfp.agent.agent.run_tool_with_gate",
         lambda tool, tool_use: gate_calls.append(tool_use.tool_use_id) or Block(
             type="tool_result", tool_use_id=tool_use.tool_use_id, tool_result="ok", is_error=False
         ),
