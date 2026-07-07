@@ -1,0 +1,112 @@
+/*
+ * guia.css -- layout de guia.html: sidebar de anclas + contenido.
+ * Componentes compartidos (nav, botones, snippets, tablas, footer) viven
+ * en theme.css. Spec: web-guia Requirement 'Sidebar de navegación'.
+ */
+
+.guia-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+  align-items: start;
+}
+
+.guia-sidebar {
+  position: sticky;
+  top: calc(var(--space-4) + 56px);
+  align-self: start;
+}
+
+.sidebar-title {
+  color: var(--accent-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-2);
+}
+
+.guia-sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.guia-sidebar li a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--text-base);
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: var(--space-2);
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.guia-sidebar li a:hover,
+.guia-sidebar li a[data-active="true"] {
+  color: var(--accent-secondary);
+  border-left-color: var(--accent-secondary);
+}
+
+.guia-content {
+  padding-bottom: var(--space-6);
+  min-width: 0;
+}
+
+.guia-content section {
+  padding-top: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.guia-content section:last-of-type {
+  border-bottom: none;
+}
+
+.transcript {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  color: var(--text-base);
+  font-size: 0.85rem;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.back-home {
+  margin-top: var(--space-5);
+}
+
+/* ============ RESPONSIVE (mobile: sidebar deja de ser fija, se apila
+   arriba del contenido -- sigue siendo accesible, spec web-guia
+   'Sidebar en mobile' + design D5) ============ */
+@media (max-width: 860px) {
+  .guia-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .guia-sidebar {
+    position: static;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .guia-sidebar ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    border-left: none;
+  }
+
+  .guia-sidebar li a {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    margin-left: 0;
+  }
+}

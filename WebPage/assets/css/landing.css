@@ -1,0 +1,377 @@
+/*
+ * landing.css -- estilos ESPECÍFICOS de index.html (hero, tabs de
+ * instalación, ciclo cogito, demo terminal, features, comparativa,
+ * testimonios). Los componentes compartidos con guia.html (nav, botones,
+ * snippets, tablas base, footer) viven en theme.css.
+ */
+
+/* ============ HERO ============ */
+.hero {
+  position: relative;
+  padding: var(--space-5) 0 var(--space-4);
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Scanlines muy sutiles (C3, pista Stitch: ventana de terminal) --
+ * decorativas, opacity <=0.06, no interfieren con lectura ni con
+ * prefers-reduced-motion (son estaticas, no animan). */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 255, 0.05) 0px,
+    rgba(0, 255, 255, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.06;
+}
+
+.hero-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.hero-title {
+  margin: 0;
+  color: var(--accent-secondary);
+  text-shadow: var(--glow-green);
+}
+
+.hero-oneliner {
+  max-width: 62ch;
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+}
+
+.hero-cta {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ============ SECTIONS ============ */
+.section {
+  padding: var(--space-6) 0;
+}
+
+.section-alt {
+  background: var(--bg-elevated);
+}
+
+.differentiators {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.differentiators li {
+  border-left: 3px solid var(--accent-secondary);
+  padding-left: var(--space-3);
+}
+
+/* ============ CICLO COGITO ============ */
+.cogito-cycle {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.cogito-step {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cogito-step:hover {
+  border-color: var(--accent-secondary);
+  box-shadow: var(--glow-green);
+}
+
+.cogito-phase {
+  display: block;
+  color: var(--accent-secondary);
+  font-weight: bold;
+  font-size: 1.05rem;
+}
+
+.cogito-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: var(--space-2);
+}
+
+.snippet-inline {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2);
+  overflow-x: auto;
+  font-size: 0.8rem;
+  color: var(--accent-primary);
+}
+
+/* ============ TABS DE INSTALACIÓN ============ */
+.tab-list {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-3);
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--accent-primary);
+}
+
+.tab-btn[aria-selected="true"] {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+.badge-soon {
+  display: inline-block;
+  background: var(--bg-inset);
+  color: var(--accent-secondary);
+  border: 1px solid var(--accent-secondary);
+  border-radius: 999px;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.5rem;
+  margin-left: var(--space-1);
+  vertical-align: middle;
+}
+
+.npm-notice {
+  background: var(--bg-inset);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+
+/* ============ DEMO TERMINAL ============ */
+.terminal-window {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-width: 760px;
+}
+
+.terminal-titlebar {
+  background: #2e2e2e;
+  padding: var(--space-1) var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-red {
+  background: #ff5f56;
+}
+
+.dot-yellow {
+  background: #ffbd2e;
+}
+
+.dot-green {
+  background: #27c93f;
+}
+
+.terminal-title {
+  margin-left: var(--space-2);
+  /* D5 (gate de calidad): text-muted (#8F8F8F) sobre el fondo hardcoded
+   * #2e2e2e de .terminal-titlebar media 4.20:1 -- bajo el minimo WCAG
+   * 4.5:1. text-base sobre el mismo fondo sube a ~9.8:1. */
+  color: var(--text-base);
+  font-size: 0.8rem;
+}
+
+.demo-output {
+  margin: 0;
+  padding: var(--space-3);
+  color: var(--text-base);
+  font-size: 0.85rem;
+  min-height: 9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.demo-output .gate-line {
+  color: var(--accent-secondary);
+}
+
+.btn-replay {
+  display: block;
+  margin: 0 var(--space-3) var(--space-3) auto;
+}
+
+/* ============ FEATURES GRID ============ */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.feature-card {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--glow-cyan);
+}
+
+.feature-card h3 {
+  margin-bottom: var(--space-1);
+}
+
+.feature-card p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ============ COMPARATIVA (especializa .table-wrapper de theme.css) ============ */
+.comparison-table {
+  min-width: 640px;
+}
+
+.comparison-table .yes {
+  color: var(--accent-secondary);
+  font-weight: bold;
+}
+
+.comparison-table .no {
+  color: var(--text-muted);
+}
+
+.comparison-table .partial {
+  color: var(--cyan-200);
+}
+
+.table-note {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ============ TESTIMONIOS ============ */
+.fiction-disclaimer {
+  background: var(--bg-inset);
+  border-left: 3px solid var(--accent-danger);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.9rem;
+}
+
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.tweet-card {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin: 0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tweet-card:hover {
+  border-color: var(--accent-secondary);
+  box-shadow: var(--glow-green);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  color: var(--accent-primary);
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 0.02em;
+}
+
+.tweet-card blockquote {
+  margin: 0 0 var(--space-2);
+  font-size: 0.9rem;
+  color: var(--text-base);
+}
+
+.tweet-card figcaption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+}
+
+.handle-name {
+  color: var(--accent-primary);
+}
+
+.handle-at {
+  color: var(--text-muted);
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 860px) {
+  .cogito-cycle {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .testimonials-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .cogito-cycle {
+    grid-template-columns: 1fr;
+  }
+}

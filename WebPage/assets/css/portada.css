@@ -1,0 +1,40 @@
+/*
+ * portada.css -- GENERADO por scripts/gen_portada_web.py.
+ * NO EDITAR A MANO. Regenerar con:
+ *     .venv/bin/python WebPage/scripts/gen_portada_web.py
+ *
+ * Clases de color c0..cN mapeadas 1:1 a los hex fg presentes en
+ * src/erickfp/ui/_portada_asset.py (ROWS). El fondo #222222 se fija
+ * una sola vez en .portada, nunca por span (design D3).
+ */
+
+.portada {
+  background-color: #222222;
+  color: #ffffff;
+  margin: 0;
+  padding: var(--space-3, 1rem) 0;
+  white-space: pre;
+  overflow: hidden;
+  /* Responsive: escala fluida sin scroll horizontal (design D2,
+     spec web-portada-asset Requirement 'Comportamiento responsive del arte'). 149 columnas monospace ~0.6ch por unidad de font-size. */
+  font-size: clamp(3px, 1.1vw, 11px);
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.portada .c0 { color: #99FF99; }
+.portada .c1 { color: #B3FFFF; }
+.portada .c2 { color: #80FF80; }
+.portada .c3 { color: #00FF00; }
+.portada .c4 { color: #66FF66; }
+.portada .c5 { color: #00FFFF; }
+.portada .c6 { color: #4DFFFF; }
+.portada .c7 { color: #4DFF4D; }
+.portada .c8 { color: #99FFFF; }
+.portada .c9 { color: #80FFFF; }
+.portada .c10 { color: #00E600; }
+.portada .c11 { color: #1AFFFF; }
+.portada .c12 { color: #00E6E6; }
+.portada .c13 { color: #66FFFF; }
+.portada .c14 { color: #33FFFF; }

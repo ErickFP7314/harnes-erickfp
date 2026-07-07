@@ -1,0 +1,535 @@
+/*
+ * theme.css -- tokens de tema compartidos por todo WebPage/.
+ * Fuente de verdad: src/erickfp/ui/theme.py (CYAN #00FFFF, GREEN #00FF00,
+ * BG #222222) + rampas observadas en src/erickfp/ui/_portada_asset.py.
+ * Spec: web-theme-terminal (paleta exacta, tipografia monospace, neon solo
+ * en acentos, responsive, accesibilidad basica).
+ *
+ * Regla de integracion (design D6): cualquier CSS que entre despues (Stitch/
+ * Magic/ui-ux-pro-max) DEBE normalizarse contra estos tokens -- ningun color
+ * de acento ad-hoc fuera de esta paleta.
+ */
+
+:root {
+  /* --- Paleta primaria (theme.py) --- */
+  --color-cyan: #00ffff;
+  --color-green: #00ff00;
+  --color-bg: #222222;
+  --color-white: #ffffff;
+
+  /* --- Rampa cyan (claro -> oscuro relativo al primario) --- */
+  --cyan-100: #b3ffff;
+  --cyan-200: #99ffff;
+  --cyan-300: #80ffff;
+  --cyan-400: #66ffff;
+  --cyan-500: #4dffff;
+  --cyan-600: #33ffff;
+  --cyan-700: #1affff;
+  --cyan-800: #00e6e6;
+
+  /* --- Rampa verde --- */
+  --green-100: #99ff99;
+  --green-200: #80ff80;
+  --green-300: #66ff66;
+  --green-400: #4dff4d;
+  --green-800: #00e600;
+
+  /* --- Superficies y texto --- */
+  --bg-base: var(--color-bg);
+  --bg-elevated: #2a2a2a;
+  --bg-inset: #1a1a1a;
+  --text-base: #d0d0d0;
+  --text-muted: #8f8f8f;
+  --border-subtle: #3a3a3a;
+
+  /* --- Acentos semanticos (siempre desde la paleta) --- */
+  --accent-primary: var(--color-cyan);
+  --accent-secondary: var(--color-green);
+  --accent-danger: #ff5f5f;
+
+  /*
+   * --- Tipografia: monospace con fallbacks del sistema (C3: decision de
+   * font-stack diferida del design -- CERO CDNs/@import de Google Fonts a
+   * proposito, el sitio debe funcionar abriendo el .html con file:// sin
+   * red. Si "JetBrains Mono" no esta instalada localmente, cae en el
+   * siguiente monospace del sistema sin romper la estetica. ---
+   */
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", Menlo,
+    Consolas, monospace;
+
+  /* --- Espaciado y layout --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2.5rem;
+  --space-6: 4rem;
+  --max-width: 1200px;
+  --radius: 6px;
+
+  /* --- Escala de z-index (C3: unica fuente, nada ad-hoc por encima) ---
+   * 50 = nav sticky. 100 = skip-link, intencionalmente por encima del nav
+   * porque debe cubrirlo al recibir foco (accesibilidad de teclado). */
+  --z-nav: 50;
+  --z-skip-link: 100;
+
+  /* --- Sombras/glow neon (C3: solo hover, headings hero y elementos
+   * pequenos -- nunca en parrafos largos, spec web-theme-terminal). --- */
+  --glow-cyan: 0 0 10px rgba(0, 255, 255, 0.45);
+  --glow-green: 0 0 10px rgba(0, 255, 0, 0.4);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-base);
+  color: var(--text-base);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  line-height: 1.25;
+  margin: 0 0 var(--space-3);
+}
+
+h1 {
+  font-size: clamp(1.75rem, 4vw, 3rem);
+}
+
+h2 {
+  font-size: clamp(1.4rem, 3vw, 2.1rem);
+}
+
+h3 {
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  color: var(--accent-secondary);
+}
+
+p {
+  color: var(--text-base);
+  max-width: 70ch;
+}
+
+a {
+  color: var(--accent-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--cyan-200);
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
+}
+
+button {
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+
+/* Foco visible en todo elemento interactivo (accesibilidad, web-theme-terminal) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--bg-inset);
+  color: var(--accent-secondary);
+  padding: var(--space-2) var(--space-3);
+  z-index: var(--z-skip-link);
+  border: 1px solid var(--accent-secondary);
+}
+
+.skip-link:focus {
+  left: var(--space-2);
+  top: var(--space-2);
+}
+
+/* --- Botones de copiado reutilizados en landing y guia --- */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-primary);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.copy-btn:hover,
+.copy-btn:focus-visible {
+  border-color: var(--accent-primary);
+  box-shadow: var(--glow-cyan);
+}
+
+.copy-btn[data-copied="true"] {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+  box-shadow: var(--glow-green);
+}
+
+/* --- Reveal-on-scroll (main.js agrega/observa .reveal / .visible) --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* =====================================================================
+ * Componentes compartidos entre index.html y guia.html: nav sticky,
+ * botones, snippets copiables, tablas base, callouts. landing.css/
+ * guia.css solo agregan layout especifico de cada pagina (D1).
+ * ===================================================================== */
+
+/* ---------- Nav sticky ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-nav);
+  background: rgba(34, 34, 34, 0.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+
+.logo {
+  color: var(--accent-primary);
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+  transition: text-shadow 0.2s ease;
+}
+
+.logo:hover,
+.logo:focus-visible {
+  text-shadow: var(--glow-cyan);
+}
+
+.cursor-caret {
+  animation: blink-caret 1.1s steps(2) infinite;
+}
+
+@keyframes blink-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  color: var(--text-base);
+  text-decoration: none;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover,
+.nav-links a[data-active="true"] {
+  color: var(--accent-secondary);
+}
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-primary);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2);
+  min-width: 44px;
+  min-height: 44px;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-toggle:hover {
+  border-color: var(--accent-primary);
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  background: transparent;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  background: var(--accent-primary);
+  color: var(--bg-base);
+  box-shadow: var(--glow-cyan);
+}
+
+/* Primario (pista Stitch C1): fondo cyan solido, texto oscuro, uppercase */
+.btn-primary {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--bg-base);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: bold;
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background: var(--cyan-200);
+  border-color: var(--cyan-200);
+  color: var(--bg-base);
+  box-shadow: var(--glow-cyan);
+}
+
+/* Secundario (pista Stitch C1): borde verde, texto verde, fondo transparente */
+.btn-secondary {
+  border-color: var(--accent-secondary);
+  color: var(--accent-secondary);
+  background: transparent;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  background: var(--accent-secondary);
+  color: var(--bg-base);
+  box-shadow: var(--glow-green);
+}
+
+.btn-github {
+  white-space: nowrap;
+}
+
+/* ---------- Snippets copiables ---------- */
+.snippet {
+  position: relative;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  /* padding-top ampliado (C3, regla de touch target >=44px): reserva
+   * espacio para que .copy-btn no tape la primera linea de codigo. */
+  padding: 3.75rem var(--space-3) var(--space-3);
+  overflow-x: auto;
+}
+
+.snippet pre {
+  margin: 0;
+  color: var(--accent-primary);
+  font-size: 0.85rem;
+  white-space: pre;
+}
+
+.snippet .copy-btn {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+}
+
+/* ---------- Tablas base ---------- */
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: var(--space-4);
+  /* D5 (gate de calidad): fondo propio bg-inset en vez de heredar el fondo
+   * de la seccion contenedora (.section-alt = bg-elevated #2A2A2A). Sin
+   * esto, ".comparison-table .no" (text-muted #8F8F8F) sobre bg-elevated
+   * medía 4.44:1 -- por debajo del minimo WCAG 4.5:1. Sobre bg-inset
+   * (#1A1A1A) el mismo texto muted sube a ~5.38:1. */
+  background: var(--bg-inset);
+}
+
+.table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+
+.table-wrapper th,
+.table-wrapper td {
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-size: 0.85rem;
+  vertical-align: top;
+}
+
+.table-wrapper thead th {
+  color: var(--accent-primary);
+  background: var(--bg-inset);
+}
+
+/* ---------- Callouts ---------- */
+.callout {
+  background: var(--bg-inset);
+  border-left: 3px solid var(--accent-secondary);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.9rem;
+}
+
+.callout-warning {
+  border-left-color: var(--accent-danger);
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  background: var(--bg-inset);
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-4) 0;
+}
+
+.footer-inner {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.footer-disclaimer {
+  font-size: 0.75rem;
+}
+
+.footer-links a {
+  color: var(--accent-primary);
+}
+
+.footer-prompt {
+  margin: var(--space-2) 0 0;
+  color: var(--accent-primary);
+  font-size: 0.85rem;
+}
+
+/* ---------- Responsive nav (mobile) ---------- */
+@media (max-width: 640px) {
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-base);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-direction: column;
+    padding: var(--space-3) var(--space-4);
+    display: none;
+  }
+
+  .nav-links[data-open="true"] {
+    display: flex;
+  }
+
+  .nav-toggle {
+    display: inline-block;
+  }
+
+  .btn-github span {
+    display: none;
+  }
+}

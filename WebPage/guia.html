@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de uso — ErickFP</title>
+<meta name="description" content="Guía de uso de ErickFP: qué es, requisitos, instalación, erickfp init, erickfp chat y el Ciclo Cogito completo (duda, divide, ordena, enumera).">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/theme.css">
+<link rel="stylesheet" href="assets/css/guia.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<header class="site-header">
+  <nav class="nav container" aria-label="Navegación principal">
+    <a href="index.html" class="logo"><span aria-hidden="true">&gt; </span>erickfp<span class="cursor-caret">_</span></a>
+    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menú">☰</button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html#features">Features</a></li>
+      <li><a href="index.html#ciclo">Cómo funciona</a></li>
+      <li><a href="index.html#comparativa">Comparativa</a></li>
+      <li><a href="index.html">← Volver al inicio</a></li>
+    </ul>
+    <a class="btn btn-github" href="https://github.com/ErickFP7314/harnes-erickfp" target="_blank" rel="noopener noreferrer">
+      <span aria-hidden="true">★</span> GitHub
+    </a>
+  </nav>
+</header>
+
+<div class="guia-layout container">
+  <aside class="guia-sidebar" aria-label="Secciones de la guía">
+    <nav>
+      <p class="sidebar-title">En esta guía</p>
+      <ul>
+        <li><a href="#que-es" data-nav>Qué es ErickFP</a></li>
+        <li><a href="#requisitos" data-nav>Requisitos</a></li>
+        <li><a href="#instalacion" data-nav>Instalación</a></li>
+        <li><a href="#init" data-nav>erickfp init</a></li>
+        <li><a href="#chat" data-nav>erickfp chat</a></li>
+        <li><a href="#ciclo" data-nav>El Ciclo Cogito</a></li>
+        <li><a href="#troubleshooting" data-nav>Solución de problemas</a></li>
+        <li><a href="#faq" data-nav>Preguntas frecuentes</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main id="main" class="guia-content">
+    <h1>Guía de uso de ErickFP</h1>
+    <p>
+      Esta guía te lleva de cero a tu primera sesión completa con ErickFP, sin asumir experiencia previa con
+      agentes de IA.
+    </p>
+
+    <section id="que-es">
+      <h2>¿Qué es ErickFP, en una frase?</h2>
+      <p>
+        Un asistente de IA que vive en tu terminal, puede leer/escribir archivos y ejecutar comandos
+        <strong>solo con tu permiso</strong>, y que trabaja siguiendo el método de Descartes: primero duda,
+        luego divide, luego construye y al final revisa.
+      </p>
+    </section>
+
+    <section id="requisitos">
+      <h2>1. Lo que necesitas</h2>
+      <ol>
+        <li><strong>Python 3.10 o superior</strong> — verifica con <code>python3 --version</code>.</li>
+        <li>
+          <strong>Una API key gratuita de Google Gemini</strong> — entra a
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>
+          con tu cuenta de Google y crea una. No pide tarjeta.
+        </li>
+      </ol>
+      <p class="callout callout-warning">
+        <span aria-hidden="true">[!]</span> <strong>Tu API key es como una contraseña.</strong> No la pegues en chats, capturas de pantalla ni
+        documentos compartidos — Google detecta keys expuestas y las desactiva automáticamente.
+      </p>
+    </section>
+
+    <section id="instalacion">
+      <h2>2. Instalación (una sola vez)</h2>
+      <div class="snippet">
+        <pre><code>git clone git@github.com:ErickFP7314/harnes-erickfp.git
+cd harnes-erickfp
+
+python3 -m venv .venv
+source .venv/bin/activate      # en cada nueva terminal donde uses erickfp
+
+pip install -e ".[dev]"
+erickfp --help                  # si ves la ayuda, todo está bien</code></pre>
+        <button class="copy-btn" aria-label="Copiar comando de instalación completo" data-copy="git clone git@github.com:ErickFP7314/harnes-erickfp.git&#10;cd harnes-erickfp&#10;&#10;python3 -m venv .venv&#10;source .venv/bin/activate&#10;&#10;pip install -e &quot;.[dev]&quot;&#10;erickfp --help">Copiar</button>
+      </div>
+      <p>Guarda tu API key (edita el archivo con tu editor, reemplazando el valor):</p>
+      <div class="snippet">
+        <pre><code>printf 'GEMINI_API_KEY=TU_KEY_AQUI\n' &gt; .env &amp;&amp; chmod 600 .env</code></pre>
+        <button class="copy-btn" aria-label="Copiar comando para guardar la API key" data-copy="printf 'GEMINI_API_KEY=TU_KEY_AQUI\n' > .env && chmod 600 .env">Copiar</button>
+      </div>
+    </section>
+
+    <section id="init">
+      <h2>3. Tu primer proyecto: <code>erickfp init</code></h2>
+      <p>Ve al directorio del proyecto donde quieras trabajar y ejecuta:</p>
+      <div class="snippet">
+        <pre><code>erickfp init</code></pre>
+        <button class="copy-btn" aria-label="Copiar comando erickfp init" data-copy="erickfp init">Copiar</button>
+      </div>
+      <p>Esto crea la carpeta <code>.ErickFP/</code> con:</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th scope="col">Qué</th><th scope="col">Para qué sirve</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>core/Claude</code></td>
+              <td>Los axiomas de tu proyecto: qué priorizas (legibilidad, seguridad…) y qué sacrificas. La IA los lee antes de cada acción.</td>
+            </tr>
+            <tr>
+              <td><code>core/agents/planner.md</code>, <code>coder.md</code>, <code>reviewer.md</code></td>
+              <td>Los tres "roles" que la IA adopta según la fase.</td>
+            </tr>
+            <tr>
+              <td><code>adr/</code></td>
+              <td>El grafo de decisiones de arquitectura (archivos markdown enlazados).</td>
+            </tr>
+            <tr>
+              <td><code>memory/</code></td>
+              <td>La memoria persistente (SQLite) — la IA recuerda entre sesiones.</td>
+            </tr>
+            <tr>
+              <td><code>hooks/</code></td>
+              <td>Punto de extensión para restricciones propias.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="callout">
+        <strong>Paso recomendado:</strong> abre <code>.ErickFP/core/Claude</code> y escribe tus verdaderas
+        prioridades. Ese archivo gobierna todo lo que la IA haga. Solo tú puedes editarlo — la IA tiene
+        <em>prohibido</em> tocarlo (un hook la bloquea aunque tú aprobaras la operación por error).
+      </p>
+      <p>Si vuelves a correr <code>init</code>, no perderás nada: los archivos sagrados solo se sobrescriben si tú lo confirmas explícitamente.</p>
+    </section>
+
+    <section id="chat">
+      <h2>4. Conversar: <code>erickfp chat</code></h2>
+      <div class="snippet">
+        <pre><code>erickfp chat</code></pre>
+        <button class="copy-btn" aria-label="Copiar comando erickfp chat" data-copy="erickfp chat">Copiar</button>
+      </div>
+      <p>Ejemplo de sesión:</p>
+      <pre class="transcript">ErickFP chat -- Ctrl+D o 'salir' para terminar.
+tu&gt; ¿qué archivos python hay en este proyecto?
+[tool] bash {"command": "find . -name '*.py'"}   ¿aprobar? [y/n] y
+erickfp&gt; Encontré estos archivos: ...
+tu&gt; salir</pre>
+      <p>Reglas del juego:</p>
+      <ul>
+        <li>Cuando la IA quiera ejecutar algo (un comando, leer o escribir un archivo), <strong>te preguntará</strong> <code>¿aprobar? [y/n]</code>.</li>
+        <li><strong>Solo la letra <code>y</code> aprueba.</strong> Enter vacío, <code>n</code>, o cualquier otra cosa = denegado. Es a propósito: el default seguro es "no".</li>
+        <li>Si deniegas, no pasa nada malo: la IA recibe "el usuario denegó esto" y buscará otro camino o te preguntará qué prefieres.</li>
+        <li>Para salir: escribe <code>salir</code>, <code>exit</code>, <code>quit</code>, o presiona <code>Ctrl+D</code>.</li>
+      </ul>
+
+      <h3>Slash commands del REPL</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th scope="col">Comando</th><th scope="col">Qué hace</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/help</code></td><td>Lista los comandos disponibles.</td></tr>
+            <tr><td><code>/model</code></td><td>Muestra el modelo activo, o lo cambia con <code>/model &lt;nombre&gt;</code>.</td></tr>
+            <tr><td><code>/tools</code></td><td>Lista las tools registradas (orden estable del registry).</td></tr>
+            <tr><td><code>/clear</code></td><td>Vacía el historial de la sesión en curso.</td></tr>
+            <tr><td><code>/tokens</code></td><td>Muestra tokens acumulados y costo estimado de la sesión.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ciclo">
+      <h2>5. Crear software con el Ciclo Cogito</h2>
+      <p>
+        Para tareas serias, no uses el chat libre — usa el ciclo por fases. Cada fase produce un documento en
+        <code>.ErickFP/cogito/&lt;slug&gt;/</code> que alimenta a la siguiente.
+      </p>
+
+      <h3>Fase 1 — <code>duda</code> (Evidencia)</h3>
+      <div class="snippet">
+        <pre><code>erickfp duda "un script que respalde mis fotos a un disco externo"</code></pre>
+        <button class="copy-btn" aria-label="Copiar comando de ejemplo de erickfp duda" data-copy='erickfp duda "un script que respalde mis fotos a un disco externo"'>Copiar</button>
+      </div>
+      <p>
+        Si tu objetivo es <strong>claro</strong>, genera <code>duda.md</code> con la especificación validada y
+        te muestra el <strong>slug</strong> (el identificador del objetivo, ej.
+        <code>un-script-que-respalde-mis-fotos-a-un-disco-externo</code>).
+      </p>
+      <p>
+        Si es <strong>ambiguo</strong>, la IA se niega a avanzar y te hace preguntas. Responde afinando tu
+        objetivo y vuelve a intentar. Esto es una función, no un error: el método cartesiano no construye sobre
+        dudas.
+      </p>
+
+      <h3>Fase 2 — <code>divide</code> (Análisis)</h3>
+      <div class="snippet">
+        <pre><code>erickfp divide &lt;slug&gt;</code></pre>
+        <button class="copy-btn" aria-label="Copiar comando erickfp divide" data-copy="erickfp divide <slug>">Copiar</button>
+      </div>
+      <p>El rol <strong>Planner</strong> descompone el objetivo en las partes más pequeñas posibles → <code>divide.md</code>.</p>
+
+      <h3>Fase 3 — <code>ordena</code> (Síntesis)</h3>
+      <div class="snippet">
+        <pre><code>erickfp ordena &lt;slug&gt;</code></pre>
+        <button class="copy-btn" aria-label="Copiar comando erickfp ordena" data-copy="erickfp ordena <slug>">Copiar</button>
+      </div>
+      <p>El rol <strong>Coder</strong> construye de lo simple a lo complejo siguiendo el plan. Aquí los hooks son más estrictos: la síntesis debe ser trazable al grafo ADR.</p>
+
+      <h3>Fase 4 — <code>enumera</code> (Revisión)</h3>
+      <div class="snippet">
+        <pre><code>erickfp enumera &lt;slug&gt;</code></pre>
+        <button class="copy-btn" aria-label="Copiar comando erickfp enumera" data-copy="erickfp enumera <slug>">Copiar</button>
+      </div>
+      <p>El rol <strong>Reviewer</strong> repasa todo lo producido → <code>enumera.md</code>.</p>
+
+      <h3>Reglas del ciclo</h3>
+      <ul>
+        <li><strong>El orden es obligatorio.</strong> Si corres <code>ordena</code> sin haber pasado por <code>divide</code>, obtendrás un mensaje claro de qué falta (sin errores crípticos).</li>
+        <li>Puedes tener <strong>varios objetivos en paralelo</strong> — cada uno vive en su propia carpeta por slug.</li>
+        <li>Los artefactos son markdown normal: léelos, edítalos, versiónalos en git.</li>
+      </ul>
+    </section>
+
+    <section id="troubleshooting">
+      <h2>6. Solución de problemas</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th scope="col">Síntoma</th><th scope="col">Causa probable</th><th scope="col">Solución</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>No se encontró .ErickFP. Corre 'erickfp init' primero.</code></td>
+              <td>Estás en un directorio sin inicializar</td>
+              <td><code>erickfp init</code></td>
+            </tr>
+            <tr>
+              <td>Error <code>403 ... API key</code></td>
+              <td>Key inválida, o Google la revocó por exposición</td>
+              <td>Genera una nueva en AI Studio y actualiza <code>.env</code></td>
+            </tr>
+            <tr>
+              <td>Error <code>500 INTERNAL</code> ocasional</td>
+              <td>Inestabilidad temporal del proveedor (Gemma es reciente)</td>
+              <td>El harness reintenta 1 vez solo; si persiste, espera ~15s y reintenta el comando</td>
+            </tr>
+            <tr>
+              <td>Respuestas lentas (5–15s)</td>
+              <td>Es la latencia normal del modelo default en free tier</td>
+              <td>Paciencia, o configura un modelo más rápido (<code>gemini/gemini-3.5-flash</code>)</td>
+            </tr>
+            <tr>
+              <td><code>command not found: erickfp</code></td>
+              <td>El venv no está activado</td>
+              <td><code>source .venv/bin/activate</code></td>
+            </tr>
+            <tr>
+              <td>La fase X dice que falta un artefacto</td>
+              <td>Saltaste una fase del ciclo</td>
+              <td>Corre la fase anterior primero</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>7. Preguntas frecuentes</h2>
+      <h3>¿ErickFP puede dañar mi sistema?</h3>
+      <p>
+        Toda acción con efectos (comandos, escrituras) pasa por tu aprobación explícita. Además, la raíz
+        <code>.ErickFP/core/</code> está protegida contra escritura del agente a nivel de hook. Dicho eso: lee
+        lo que apruebas — el gate es tu cinturón de seguridad, no un piloto automático.
+      </p>
+      <h3>¿Cuánto cuesta usarlo?</h3>
+      <p>
+        Nada: el modelo default corre en el free tier de la API de Gemini (≈1.500 peticiones/día). Si activas
+        facturación en tu proyecto de Google Cloud, el free tier desaparece — no lo hagas salvo que lo
+        necesites.
+      </p>
+      <h3>¿Puedo usar otro modelo (Claude, GPT, uno local)?</h3>
+      <p>
+        La arquitectura está lista para eso (capa de proveedor agnóstica vía LiteLLM), configurable hoy por
+        código. Un comando <code>--model</code> está en el roadmap.
+      </p>
+      <h3>¿Dónde queda lo que la IA "recuerda"?</h3>
+      <p>
+        En <code>.ErickFP/memory/</code> (una base SQLite local). Nada sale de tu máquina salvo lo que el
+        modelo necesita para responder (tus mensajes y los resultados de herramientas que apruebes).
+      </p>
+    </section>
+
+    <p class="back-home"><a href="index.html">← Volver al inicio</a></p>
+  </main>
+</div>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>ErickFP — harness agéntico CLI. Proyecto personal educativo.</p>
+    <p class="footer-links">
+      <a href="index.html">Inicio</a> ·
+      <a href="guia.html">Guía de uso</a> ·
+      <a href="https://github.com/ErickFP7314/harnes-erickfp" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </p>
+    <p class="footer-prompt" aria-hidden="true">&gt; <span class="cursor-caret">_</span></p>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ErickFP — harness agéntico CLI gobernado por el método cartesiano</title>
+<meta name="description" content="ErickFP es un harness agéntico de línea de comandos: el modelo es el motor, el harness es todo lo demás. Método cartesiano, gate de permisos sin fuga, núcleo sagrado y trazabilidad ADR.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/theme.css">
+<link rel="stylesheet" href="assets/css/portada.css">
+<link rel="stylesheet" href="assets/css/landing.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<header class="site-header">
+  <nav class="nav container" aria-label="Navegación principal">
+    <a href="#hero" class="logo"><span aria-hidden="true">&gt; </span>erickfp<span class="cursor-caret">_</span></a>
+    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menú">☰</button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="#features" data-nav>Features</a></li>
+      <li><a href="#ciclo" data-nav>Cómo funciona</a></li>
+      <li><a href="#comparativa" data-nav>Comparativa</a></li>
+      <li><a href="guia.html">Guía</a></li>
+    </ul>
+    <a class="btn btn-github" href="https://github.com/ErickFP7314/harnes-erickfp" target="_blank" rel="noopener noreferrer">
+      <span aria-hidden="true">★</span> GitHub
+    </a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ============ HERO ============ -->
+  <section id="hero" class="hero">
+    <div class="container hero-inner">
+      <!-- PORTADA:BEGIN -->
+<pre class="portada" aria-hidden="true">
+                                                                                                                            <span class="c0">█▇</span>        <span class="c0">▇▇█████▇▇</span>      
+                  <span class="c1">▂█████</span>                                                                    <span class="c2">██</span><span class="c0">██</span>                <span class="c0">▇▇████</span>     <span class="c3">░</span><span class="c2">█</span><span class="c0">█</span>    <span class="c4">▇▇████████</span><span class="c2">███</span><span class="c0">██▇▇</span>  
+               <span class="c1">▂▂██</span><span class="c5">░░░░</span><span class="c1">██</span>                                                                 <span class="c4">██</span><span class="c3">░░░░</span><span class="c2">█</span><span class="c0">██</span>        <span class="c0">▇▇██████</span>        <span class="c3">░</span><span class="c2">█</span><span class="c0">█</span>  <span class="c4">▇████</span><span class="c3">░░░░░░░░░░░</span><span class="c2">██</span><span class="c0">██▇</span>
+     <span class="c6">▂▂▂▂</span>     <span class="c1">███</span><span class="c5">░</span>    <span class="c5">░</span><span class="c1">██</span>                                                                <span class="c4">██</span>     <span class="c3">░</span><span class="c0">███</span>   <span class="c2">▇███████</span><span class="c3">░░░░</span>        <span class="c3">░</span><span class="c2">█</span><span class="c4">████</span><span class="c3">░░░░░</span>         <span class="c3">░░</span><span class="c2">██</span><span class="c0">██</span>
+   <span class="c6">███</span>      <span class="c1">████</span>    <span class="c5">░░</span><span class="c1">██</span>                                                                 <span class="c3">░</span><span class="c4">███</span>   <span class="c4">██</span><span class="c0">██</span><span class="c4">██████</span><span class="c3">░░░░░</span>           <span class="c3">▇</span><span class="c7">█████</span><span class="c3">░░</span>              <span class="c3">░</span><span class="c4">█</span><span class="c2">██</span><span class="c0">█</span>
+ <span class="c6">███</span>       <span class="c8">█████</span>  <span class="c5">░░░</span><span class="c8">██</span>                                                                   <span class="c3">░░</span><span class="c4">█████████</span><span class="c3">░░░░░</span>              <span class="c3">▇███</span><span class="c7">█</span><span class="c3">█</span>                  <span class="c3">░</span><span class="c4">██</span><span class="c2">██</span>
+<span class="c5">░</span><span class="c6">██</span>       <span class="c8">████</span>  <span class="c5">░░</span><span class="c8">███</span>                                                                       <span class="c3">░░░░░</span><span class="c4">███</span><span class="c3">░</span>                 <span class="c3">███░░███</span>               <span class="c3">▃▃</span><span class="c4">█████</span><span class="c3">░</span>
+<span class="c5">░░</span><span class="c6">██</span><span class="c9">▂</span><span class="c6">▂▂▂▂█</span><span class="c9">████████▛</span>                                                                             <span class="c3">░</span><span class="c4">█</span><span class="c3">██</span>                <span class="c3">███</span>    <span class="c3">░██</span>            <span class="c3">▃▃</span><span class="c7">███</span><span class="c3">█</span><span class="c7">██</span><span class="c3">░░</span> 
+ <span class="c5">░░░</span><span class="c6">██████</span><span class="c9">████</span>                                                                                  <span class="c3">░███</span>               <span class="c3">██</span>      <span class="c3">░██</span>        <span class="c3">▃▃</span><span class="c10">▇</span><span class="c3">███████░░</span>   
+   <span class="c5">░░░░░</span><span class="c6">██</span><span class="c5">▛</span>                                                                  <span class="c8">█████</span>              <span class="c3">░███</span>         <span class="c4">▇</span><span class="c0">███</span>          <span class="c3">░██</span>      <span class="c3">▃▇██████░░░░</span>     
+      <span class="c5">░░</span><span class="c11">██</span><span class="c5">▍</span>                                                                 <span class="c5">░</span><span class="c8">█</span><span class="c5">░░░</span><span class="c8">██</span>             <span class="c3">░███</span>    <span class="c4">▇▇███</span><span class="c0">██</span><span class="c3">░</span>           <span class="c3">░██</span>  <span class="c3">▃</span><span class="c10">▇</span><span class="c3">███████░░░░</span>        
+      <span class="c5">░░</span><span class="c11">████</span><span class="c12">▇</span>                                   <span class="c1">██▙</span>                         <span class="c5">░</span><span class="c8">█</span>  <span class="c5">░░</span><span class="c8">██</span>            <span class="c3">░███</span><span class="c7">▇▇▇</span><span class="c4">███</span><span class="c3">░░░░░</span>            <span class="c3">░██▇</span><span class="c10">▇</span><span class="c3">████░░░░░</span>            
+       <span class="c5">░░</span><span class="c11">██████████████</span><span class="c12">▇</span>                       <span class="c5">░</span><span class="c1">███</span>                         <span class="c5">░</span><span class="c9">█</span>  <span class="c5">░</span><span class="c9">███</span>           <span class="c3">███████░░░░</span>                <span class="c3">▟▇██████░░</span>                 
+         <span class="c5">░░</span><span class="c11">████████</span><span class="c5">░░░░</span>                        <span class="c5">░░░░</span>                         <span class="c5">░</span><span class="c9">█████</span><span class="c5">▍</span>   <span class="c4">▇█</span>      <span class="c3">██████░░</span>                  <span class="c3">▇███████░░</span>                   
+         <span class="c12">▇▇</span><span class="c11">████</span><span class="c5">░░░░░</span>                                                        <span class="c5">░</span><span class="c9">████</span><span class="c5">▍</span>    <span class="c3">░</span><span class="c4">█</span>  <span class="c3">████░░░███</span>                 <span class="c3">▃▇██░░░██░░</span>                     
+        <span class="c12">▇</span><span class="c11">███</span><span class="c5">░░░░░</span>     <span class="c5">▀▜</span><span class="c12">▇</span><span class="c5">▙</span>            <span class="c8">▟</span><span class="c1">████</span>     <span class="c8">██</span>            <span class="c1">████████</span>      <span class="c5">░</span><span class="c13">███████</span>   <span class="c3">░</span><span class="c4">█</span><span class="c3">██░░░</span>  <span class="c3">░███</span>              <span class="c3">░▇██░░</span>   <span class="c3">░██</span>                       
+      <span class="c11">████</span><span class="c5">░░░</span>          <span class="c5">▝▜</span><span class="c11">██████</span><span class="c13">██</span><span class="c9">███</span><span class="c8">████</span><span class="c1">█</span><span class="c5">░░</span>     <span class="c8">██</span>          <span class="c1">██</span><span class="c8">██</span><span class="c5">░░░░░</span><span class="c1">██</span>     <span class="c5">░</span><span class="c13">██</span><span class="c5">░░░░</span><span class="c13">████</span> <span class="c3">░░░</span>     <span class="c3">░██</span><span class="c10">▀</span>               <span class="c3">░░░</span>    <span class="c3">░███</span>                       
+     <span class="c11">████</span><span class="c5">▍</span>              <span class="c5">▐</span><span class="c11">███████</span><span class="c13">██</span><span class="c9">███</span><span class="c8">██</span><span class="c5">░░</span>      <span class="c9">█</span><span class="c8">██</span>         <span class="c1">█</span><span class="c8">███</span><span class="c5">░</span>           <span class="c6">████</span>   <span class="c5">░░</span><span class="c6">███</span>         <span class="c3">░██</span>                      <span class="c3">░███</span>                        
+    <span class="c11">█████</span><span class="c5">▍</span>              <span class="c5">▐</span><span class="c11">██</span><span class="c5">░░░░░░░░░</span><span class="c9">███</span>        <span class="c9">███</span>        <span class="c1">█</span><span class="c8">█</span><span class="c9">██</span><span class="c5">░</span>           <span class="c12">▇</span><span class="c14">███</span><span class="c13">█</span>    <span class="c5">░</span><span class="c6">██</span>         <span class="c3">░░██</span>                     <span class="c3">░██</span><span class="c10">▀</span>                         
+    <span class="c11">█████</span><span class="c5">▍</span>              <span class="c5">▐</span><span class="c11">██</span>        <span class="c5">░</span><span class="c13">█</span><span class="c9">█▍</span>       <span class="c13">██</span><span class="c9">██</span>       <span class="c8">█</span><span class="c9">███</span><span class="c5">░</span>          <span class="c12">▇</span><span class="c14">█████████████</span>        <span class="c3">░░██</span><span class="c10">▀</span>                   <span class="c3">░███</span><span class="c10">▀</span>                          
+    <span class="c5">░</span><span class="c11">█████</span>             <span class="c12">▇</span><span class="c11">███</span>        <span class="c5">░</span><span class="c13">██</span><span class="c9">▍</span>      <span class="c13">█</span><span class="c14">█</span><span class="c13">█</span><span class="c14">█</span><span class="c13">█</span>      <span class="c8">█</span><span class="c9">██</span><span class="c5">░</span><span class="c9">██</span>         <span class="c12">▇</span><span class="c11">██</span><span class="c5">░░░</span><span class="c11">██</span><span class="c5">░░░░░░</span><span class="c11">███</span>      <span class="c3">░██</span><span class="c10">▀</span>                 <span class="c3">░████</span><span class="c10">▀</span>                            
+    <span class="c5">░░</span><span class="c11">████</span><span class="c12">▇</span>          <span class="c11">▇███</span><span class="c5">▍</span>          <span class="c5">░</span><span class="c13">██</span><span class="c5">▍</span>   <span class="c6">█</span><span class="c11">██</span><span class="c6">█</span><span class="c14">█</span><span class="c6">█</span><span class="c14">█</span><span class="c9">█</span>   <span class="c9">██</span><span class="c13">█</span>  <span class="c5">░░██</span>      <span class="c12">▇</span><span class="c11">██</span><span class="c5">░░</span>  <span class="c5">░</span><span class="c11">██</span><span class="c5">▍</span>    <span class="c5">░░░</span><span class="c11">███</span>   <span class="c3">███</span><span class="c10">▀</span>                <span class="c3">░███</span><span class="c10">▀▀</span>                              
+     <span class="c5">░░</span><span class="c11">█████</span><span class="c12">▇</span>      <span class="c11">▇████</span><span class="c5">▍</span>           <span class="c5">░░</span><span class="c13">██</span><span class="c11">████</span><span class="c13">██</span><span class="c5">▍</span> <span class="c5">░░</span><span class="c11">██████</span>    <span class="c5">░░</span><span class="c11">██</span><span class="c12">▇▇</span><span class="c11">████</span><span class="c5">░░░</span>   <span class="c5">░██▍</span>      <span class="c5">░░░</span><span class="c11">██████</span><span class="c3">█</span>             <span class="c3">░██████</span><span class="c10">▀</span>                                
+      <span class="c5">░░░</span><span class="c11">██████</span><span class="c12">▇▇</span><span class="c11">███████</span><span class="c5">▍</span>            <span class="c5">░░</span><span class="c11">██████</span><span class="c5">▍</span>   <span class="c5">░░</span><span class="c12">▇▇▇▇</span>      <span class="c5">░░</span><span class="c11">█████</span><span class="c5">░░░</span>     <span class="c5">░██</span>          <span class="c5">░░░</span><span class="c11">██</span><span class="c3">█▂▂▂▂▂▂▂▂▂▂▂▂▂████</span><span class="c10">▀▀▀</span>                                  
+        <span class="c5">░░░</span><span class="c11">█████████</span><span class="c5">▍</span>                                                                                                                                
+</pre>
+<!-- PORTADA:END -->
+
+      <h1 class="hero-title">ErickFP</h1>
+      <p class="hero-oneliner">
+        Harness agéntico de línea de comandos que gobierna a cualquier modelo
+        con el <strong>método cartesiano</strong>: primero duda, luego divide, después construye y al final revisa —
+        con trazabilidad ADR y un gate de permisos que nunca se salta.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#instalacion">Instalar ahora</a>
+        <a class="btn btn-secondary" href="guia.html">Leer la guía</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LA IDEA + DIFERENCIADORES ============ -->
+  <section id="idea" class="section">
+    <div class="container">
+      <h2>La idea</h2>
+      <p>
+        "El modelo es el motor, el harness es todo lo demás." ErickFP no compite por tener el modelo más listo:
+        compite por darle a cualquier modelo (incluso uno gratuito) una disciplina de trabajo verificable —
+        el <strong>Ciclo Cogito</strong>, inspirado en el método de Descartes: duda de la ambigüedad, divide el
+        problema en partes simples, ordena la construcción de lo simple a lo complejo y enumera (revisa) el
+        resultado antes de darlo por bueno.
+      </p>
+
+      <h3>Diferenciadores frente a otros harnesses</h3>
+      <ul class="differentiators reveal">
+        <li>
+          <strong>Método cartesiano gobernando el flujo.</strong> No es una sugerencia de prompt: <code>duda → divide → ordena → enumera</code>
+          son fases bloqueantes, en orden obligatorio, cada una validando la anterior.
+        </li>
+        <li>
+          <strong>Trazabilidad ADR obligatoria.</strong> Un grafo de decisiones de arquitectura enlazadas por
+          frontmatter YAML; un hook valida por DFS que toda síntesis trace hasta un nodo raíz — ninguna decisión
+          queda huérfana.
+        </li>
+        <li>
+          <strong>Gate de permisos default-deny + núcleo sagrado.</strong> Toda tool pide <code>y/n</code> y solo
+          <code>y</code> exacto aprueba; además <code>.ErickFP/core/</code> está protegido por un hook que bloquea
+          a la IA <em>incluso si el humano aprobó por error</em>.
+        </li>
+        <li>
+          <strong>Provider-agnostic verificado por test.</strong> Interfaz <code>Provider</code> propia; un test
+          AST prohíbe importar SDKs nativos fuera del adapter — cambiar de modelo no reescribe el harness.
+        </li>
+        <li>
+          <strong>Free tier por defecto.</strong> Corre gratis sobre el free tier de Gemini (sin tarjeta de crédito
+          para empezar).
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ CICLO COGITO ============ -->
+  <section id="ciclo" class="section section-alt">
+    <div class="container">
+      <h2>Cómo funciona: el Ciclo Cogito</h2>
+      <p>Cuatro fases secuenciales, cada una con su propio comando y su propio artefacto en <code>.ErickFP/cogito/&lt;slug&gt;/</code>.</p>
+      <ol class="cogito-cycle reveal">
+        <li class="cogito-step">
+          <span class="cogito-phase">1. Duda</span>
+          <span class="cogito-label">Evidencia</span>
+          <p>Valida que el objetivo no sea ambiguo. Si lo es, el harness se niega a avanzar y pregunta.</p>
+          <pre class="snippet-inline"><code>erickfp duda "&lt;objetivo&gt;"</code></pre>
+        </li>
+        <li class="cogito-step">
+          <span class="cogito-phase">2. Divide</span>
+          <span class="cogito-label">Análisis</span>
+          <p>El rol Planner descompone el objetivo en las partes más pequeñas posibles.</p>
+          <pre class="snippet-inline"><code>erickfp divide &lt;slug&gt;</code></pre>
+        </li>
+        <li class="cogito-step">
+          <span class="cogito-phase">3. Ordena</span>
+          <span class="cogito-label">Síntesis</span>
+          <p>El rol Coder construye de lo simple a lo complejo, trazable al grafo ADR.</p>
+          <pre class="snippet-inline"><code>erickfp ordena &lt;slug&gt;</code></pre>
+        </li>
+        <li class="cogito-step">
+          <span class="cogito-phase">4. Enumera</span>
+          <span class="cogito-label">Revisión</span>
+          <p>El rol Reviewer repasa todo lo producido antes de darlo por cerrado.</p>
+          <pre class="snippet-inline"><code>erickfp enumera &lt;slug&gt;</code></pre>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ INSTALACIÓN (tabs) ============ -->
+  <section id="instalacion" class="section">
+    <div class="container">
+      <h2>Instalación</h2>
+      <div class="tabs" data-tabs>
+        <div class="tab-list" role="tablist" aria-label="Métodos de instalación">
+          <button class="tab-btn" role="tab" id="tab-pip" aria-controls="panel-pip" aria-selected="true" data-tab-target="panel-pip">pip</button>
+          <button class="tab-btn" role="tab" id="tab-uv" aria-controls="panel-uv" aria-selected="false" tabindex="-1" data-tab-target="panel-uv">uv</button>
+          <button class="tab-btn" role="tab" id="tab-git" aria-controls="panel-git" aria-selected="false" tabindex="-1" data-tab-target="panel-git">git clone</button>
+          <button class="tab-btn" role="tab" id="tab-npm" aria-controls="panel-npm" aria-selected="false" tabindex="-1" data-tab-target="panel-npm">npm <span class="badge-soon">coming soon</span></button>
+        </div>
+
+        <div class="tab-panel" id="panel-pip" role="tabpanel" aria-labelledby="tab-pip">
+          <div class="snippet">
+            <pre><code>git clone git@github.com:ErickFP7314/harnes-erickfp.git
+cd harnes-erickfp
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -e ".[dev]"</code></pre>
+            <button class="copy-btn" aria-label="Copiar comando de instalación con pip" data-copy="git clone git@github.com:ErickFP7314/harnes-erickfp.git&#10;cd harnes-erickfp&#10;python3 -m venv .venv &amp;&amp; source .venv/bin/activate&#10;pip install -e &quot;.[dev]&quot;">Copiar</button>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="panel-uv" role="tabpanel" aria-labelledby="tab-uv" hidden>
+          <div class="snippet">
+            <pre><code>git clone git@github.com:ErickFP7314/harnes-erickfp.git
+cd harnes-erickfp
+uv venv &amp;&amp; source .venv/bin/activate
+uv pip install -e ".[dev]"</code></pre>
+            <button class="copy-btn" aria-label="Copiar comando de instalación con uv" data-copy="git clone git@github.com:ErickFP7314/harnes-erickfp.git&#10;cd harnes-erickfp&#10;uv venv &amp;&amp; source .venv/bin/activate&#10;uv pip install -e &quot;.[dev]&quot;">Copiar</button>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="panel-git" role="tabpanel" aria-labelledby="tab-git" hidden>
+          <div class="snippet">
+            <pre><code>git clone git@github.com:ErickFP7314/harnes-erickfp.git
+cd harnes-erickfp</code></pre>
+            <button class="copy-btn" aria-label="Copiar comando de git clone" data-copy="git clone git@github.com:ErickFP7314/harnes-erickfp.git&#10;cd harnes-erickfp">Copiar</button>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="panel-npm" role="tabpanel" aria-labelledby="tab-npm" hidden>
+          <p class="npm-notice">
+            <span class="badge-soon">coming soon</span>
+            ErickFP es un proyecto Python — un empaquetado <code>npm</code> está en el roadmap, todavía
+            <strong>no existe</strong>. No hay ningún comando <code>npm</code> funcional hoy; usa <code>pip</code>,
+            <code>uv</code> o <code>git clone</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DEMO TERMINAL ANIMADA ============ -->
+  <section id="demo" class="section section-alt">
+    <div class="container">
+      <h2>El gate de permisos, en acción</h2>
+      <p>Ninguna tool se ejecuta sin tu aprobación explícita. Así se ve una sesión real de <code>erickfp chat</code>:</p>
+      <div class="terminal-window">
+        <div class="terminal-titlebar">
+          <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+          <span class="terminal-title">erickfp chat</span>
+        </div>
+        <pre class="demo-output" id="demo-output">$ erickfp chat
+ErickFP chat -- Ctrl+D o 'salir' para terminar. Escribe /help para ver los comandos disponibles.
+tu&gt; ¿qué archivos python hay en este proyecto?
+[tool] bash {"command": "find . -name '*.py'"}
+¿aprobar? [y/n] › y
+✓ ejecutando… 42 archivos encontrados
+erickfp&gt; Encontré 42 archivos .py, principalmente bajo src/erickfp/.</pre>
+        <button class="btn btn-secondary btn-replay" id="demo-replay" type="button">▶ replay</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES GRID ============ -->
+  <section id="features" class="section">
+    <div class="container">
+      <h2>Features</h2>
+      <div class="features-grid reveal">
+        <article class="feature-card">
+          <h3>Ciclo Cogito</h3>
+          <p>4 fases cartesianas (duda/divide/ordena/enumera) con artefactos encadenados y roles Planner/Coder/Reviewer.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Permission gate sin fuga</h3>
+          <p>Toda tool pide <code>y/n</code>; solo <code>y</code> exacto aprueba. Default deny.</p>
+        </article>
+        <article class="feature-card">
+          <h3>PermissionPolicy pluggable</h3>
+          <p><code>AlwaysAsk</code> (default), <code>AllowList</code>, <code>AskOnce</code>.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Núcleo sagrado</h3>
+          <p><code>.ErickFP/core/</code> protegido por hook: ni el humano aprobando puede saltárselo.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Grafo ADR trazable</h3>
+          <p>Toda síntesis debe trazar por DFS hasta un nodo raíz del grafo de decisiones.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Hooks por fase</h3>
+          <p>PreToolUse/PostToolUse/PhaseStart/PhaseEnd, acumulativos y extensibles.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Provider-agnostic</h3>
+          <p>Interfaz propia; único import de LiteLLM aislado en el adapter; SDKs nativos prohibidos por test.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Tools + MCP</h3>
+          <p>bash, read_file, write_file, recall, delegate — y tools remotas vía MCP tras la misma interfaz.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Memoria persistente</h3>
+          <p>SQLite save/recall/preamble acotado + resumen de sesión.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Compaction</h3>
+          <p>SlidingWindow/Summarize + SafeSplitPoint: nunca corta un <code>tool_use</code>/<code>tool_result</code>.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Subagentes</h3>
+          <p>Clase <code>Agent</code> reutilizable + subagente <code>Research</code> read-only + <code>DelegateTool</code>.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Token viewer</h3>
+          <p><code>/tokens</code>: uso y costo estimado por sesión, en tiempo real.</p>
+        </article>
+        <article class="feature-card">
+          <h3>UI terminal</h3>
+          <p>Banner ASCII 25×149 precomputado, input decorado, tema cyan/verde sobre <code>#222222</code>.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Calidad</h3>
+          <p>TDD estricto + arquitectura de capas verificada por import-linter.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMPARATIVA ============ -->
+  <section id="comparativa" class="section section-alt">
+    <div class="container">
+      <h2>Comparativa</h2>
+      <p>Una comparación honesta, basada en capacidades verificables — no atribuimos a otros lo que no tienen.</p>
+      <div class="table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th scope="col">Dimensión</th>
+              <th scope="col">ErickFP</th>
+              <th scope="col">Claude Code</th>
+              <th scope="col">aider</th>
+              <th scope="col">Harness genérico</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Método cartesiano por fases obligatorias</th>
+              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
+              <td class="no">— <span class="visually-hidden">no</span></td>
+              <td class="no">— <span class="visually-hidden">no</span></td>
+              <td class="no">— <span class="visually-hidden">no</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Grafo ADR con trazabilidad verificada (DFS a raíz)</th>
+              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
+              <td class="no">— <span class="visually-hidden">no</span></td>
+              <td class="no">— <span class="visually-hidden">no</span></td>
+              <td class="no">— <span class="visually-hidden">no</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Núcleo de reglas que ni una aprobación humana puede saltarse</th>
+              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
+              <td class="partial">△ <span class="visually-hidden">parcial:</span> <span class="table-note">(gate de permisos sí existe, sin núcleo separado inmutable)</span></td>
+              <td class="no">— <span class="visually-hidden">no</span></td>
+              <td class="no">— <span class="visually-hidden">no</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Provider-agnostic (cambiar de modelo sin reescribir el harness)</th>
+              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
+              <td class="no">— <span class="visually-hidden">no</span> (nativo Anthropic)</td>
+              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
+              <td class="partial">△ <span class="visually-hidden">parcial</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Gratis por defecto (free tier sin tarjeta)</th>
+              <td class="yes">✓ <span class="visually-hidden">sí</span> (Gemini)</td>
+              <td class="no">— <span class="visually-hidden">no</span> (requiere suscripción/API de pago)</td>
+              <td class="partial">△ <span class="visually-hidden">parcial</span> (depende del modelo configurado)</td>
+              <td class="partial">△ <span class="visually-hidden">parcial</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TESTIMONIOS ============ -->
+  <section id="testimonios" class="section">
+    <div class="container">
+      <h2>Lo que dicen (personas ficticias)</h2>
+      <p class="fiction-disclaimer">
+        <span aria-hidden="true">[!]</span> Los testimonios siguientes son <strong>ficticios</strong>: nombres, handles y citas fueron inventados
+        para ilustrar casos de uso — ninguna persona real los escribió.
+      </p>
+      <div class="testimonials-grid reveal">
+        <figure class="tweet-card">
+          <blockquote>
+            "Le pedí un script y me hizo dudar de mi propio objetivo antes de dejarme seguir. Resultó que tenía razón."
+          </blockquote>
+          <figcaption>
+            <span class="avatar" aria-hidden="true">MS</span>
+            <span class="handle-name">Marta Solórzano Ficticia</span>
+            <span class="handle-at">@marta_no_existe</span>
+          </figcaption>
+        </figure>
+        <figure class="tweet-card">
+          <blockquote>
+            "El gate y/n me salvó de borrar la carpeta equivocada. Dije que no por reflejo y el harness lo respetó."
+          </blockquote>
+          <figcaption>
+            <span class="avatar" aria-hidden="true">IR</span>
+            <span class="handle-name">Ignacio Ramírez del Aire</span>
+            <span class="handle-at">@nacho_inventado</span>
+          </figcaption>
+        </figure>
+        <figure class="tweet-card">
+          <blockquote>
+            "Es el único harness que conozco que documenta por qué tomó cada decisión. El grafo ADR es adictivo."
+          </blockquote>
+          <figcaption>
+            <span class="avatar" aria-hidden="true">PV</span>
+            <span class="handle-name">Perséfone Vidal Imaginaria</span>
+            <span class="handle-at">@persefone_ficticia</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>ErickFP — harness agéntico CLI. Proyecto personal educativo, filosofía heredada de
+      <a href="https://github.com/betta-tech/byo-coding-agent" target="_blank" rel="noopener noreferrer">byo-coding-agent</a>.
+    </p>
+    <p class="footer-disclaimer">
+      Los testimonios de este sitio son ficticios. La comparativa refleja capacidades verificadas al momento de publicar
+      y puede quedar desactualizada — revisa el código fuente para el estado real.
+    </p>
+    <p class="footer-links">
+      <a href="index.html">Inicio</a> ·
+      <a href="guia.html">Guía de uso</a> ·
+      <a href="https://github.com/ErickFP7314/harnes-erickfp" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </p>
+    <p class="footer-prompt" aria-hidden="true">&gt; <span class="cursor-caret">_</span></p>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+<script src="assets/js/terminal-demo.js"></script>
+</body>
+</html>
