@@ -1,0 +1,81 @@
+change: landing-webpage
+created: 2026-07-05
+artifact_store: hybrid
+execution_mode: interactive
+description: >
+  Landing estática de presentación del producto ErickFP en WebPage/ (sitio
+  vanilla HTML/CSS/JS, cero dependencias Node, cero CDNs/fuentes externas,
+  funciona por file://). 2 páginas (landing + guía) con tema terminal
+  cyan/verde sobre #222222 y portada ASCII generada. Deploy a GitHub Pages.
+
+phases:
+  proposal:
+    status: done
+    artifact: openspec/changes/archive/2026-07-07-landing-webpage/proposal.md
+    engram: sdd/landing-webpage/proposal
+  spec:
+    status: done
+    depends_on: [proposal]
+    artifact: openspec/changes/archive/2026-07-07-landing-webpage/specs/
+    engram: sdd/landing-webpage/spec
+  design:
+    status: done
+    depends_on: [proposal]
+    artifact: openspec/changes/archive/2026-07-07-landing-webpage/design.md
+    engram: sdd/landing-webpage/design
+  tasks:
+    status: done
+    depends_on: [spec, design]
+    artifact: openspec/changes/archive/2026-07-07-landing-webpage/tasks.md
+    engram: sdd/landing-webpage/tasks
+  apply:
+    status: done
+    depends_on: [tasks]
+    engram: sdd/landing-webpage/apply-progress
+    batches_done: [A, B, C, D]
+    next_batch: null
+  verify:
+    status: done
+    depends_on: [apply]
+    artifact: openspec/changes/archive/2026-07-07-landing-webpage/verify-report.md
+    engram: sdd/landing-webpage/verify-report
+    result: PASS (0 CRITICAL, 2 WARNING, 2 SUGGESTION)
+  archive:
+    status: done
+    depends_on: [verify]
+    archived_on: 2026-07-07
+    archived_path: openspec/changes/archive/2026-07-07-landing-webpage/
+    engram: sdd/landing-webpage/archive-report
+    specs_merged:
+      new:
+        - web-landing
+        - web-guia
+        - web-theme-terminal
+        - web-portada-asset
+      modified: []
+
+capabilities:
+  new:
+    - web-landing
+    - web-guia
+    - web-theme-terminal
+    - web-portada-asset
+  modified: []
+
+delivery_batches:
+  - id: A
+    name: fundaciones (estructura WebPage/, theme.css con tokens)
+  - id: B
+    name: contenido (landing + guía, componentes, JS mínimo)
+  - id: C
+    name: portada ASCII web + pulido
+  - id: D
+    name: gate de calidad (validación HTML, contraste WCAG, responsive, reduced-motion)
+
+deployment:
+  target: GitHub Pages
+  url: https://erickfp7314.github.io/harnes-erickfp/
+  workflow: .github/workflows/deploy-pages.yml
+  status: live
+
+next_recommended: [none]  # SDD cycle complete — change archived 2026-07-07
