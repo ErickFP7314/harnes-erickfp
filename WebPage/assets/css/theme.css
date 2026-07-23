@@ -78,6 +78,13 @@
    * pequenos -- nunca en parrafos largos, spec web-theme-terminal). --- */
   --glow-cyan: 0 0 10px rgba(0, 255, 255, 0.45);
   --glow-green: 0 0 10px rgba(0, 255, 0, 0.4);
+  --glow-cyan-soft: 0 0 6px rgba(0, 255, 255, 0.22);
+
+  /* --- Sombras en capas (profundidad sutil, D-visual): resting/hover para
+   * cards y paneles. Nunca sustituyen al borde -- se combinan con
+   * border-color/glow existentes, nunca con width/height/padding. --- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
 *,
@@ -131,6 +138,7 @@ h1 {
 
 h2 {
   font-size: clamp(1.4rem, 3vw, 2.1rem);
+  text-shadow: var(--glow-cyan-soft);
 }
 
 h3 {
@@ -206,6 +214,29 @@ input:focus-visible,
 .skip-link:focus {
   left: var(--space-2);
   top: var(--space-2);
+}
+
+/* ---------- Iconos SVG inline (sprite via <use>, D6: reemplaza emojis) ---
+ * Todos los iconos usan stroke="currentColor" -- heredan el color del
+ * elemento contenedor, cero paleta nueva. Tamano relativo a la fuente. */
+.icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.15em;
+  flex-shrink: 0;
+}
+
+.icon-danger {
+  color: var(--accent-danger);
+}
+
+/* Separacion del icono cuando precede a texto visible en linea (el
+ * whitespace del markup no basta: el glyph del icono llega casi al borde
+ * de su viewBox de 24x24). No se usa en iconos solos (nav-toggle) para no
+ * descentrarlos. */
+.icon-inline {
+  margin-right: 0.35em;
 }
 
 /* --- Botones de copiado reutilizados en landing y guia --- */
@@ -364,7 +395,8 @@ input:focus-visible,
     background-color 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
   background: transparent;
 }
 
@@ -373,6 +405,14 @@ input:focus-visible,
   background: var(--accent-primary);
   color: var(--bg-base);
   box-shadow: var(--glow-cyan);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover,
+  .btn:focus-visible {
+    transform: none;
+  }
 }
 
 /* Primario (pista Stitch C1): fondo cyan solido, texto oscuro, uppercase */
@@ -421,6 +461,7 @@ input:focus-visible,
    * espacio para que .copy-btn no tape la primera linea de codigo. */
   padding: 3.75rem var(--space-3) var(--space-3);
   overflow-x: auto;
+  box-shadow: var(--shadow-sm);
 }
 
 .snippet pre {
@@ -446,6 +487,7 @@ input:focus-visible,
    * medía 4.44:1 -- por debajo del minimo WCAG 4.5:1. Sobre bg-inset
    * (#1A1A1A) el mismo texto muted sube a ~5.38:1. */
   background: var(--bg-inset);
+  box-shadow: var(--shadow-sm);
 }
 
 .table-wrapper table {
@@ -468,12 +510,21 @@ input:focus-visible,
   background: var(--bg-inset);
 }
 
+.table-wrapper tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.table-wrapper tbody tr:hover {
+  background-color: rgba(0, 255, 255, 0.05);
+}
+
 /* ---------- Callouts ---------- */
 .callout {
   background: var(--bg-inset);
   border-left: 3px solid var(--accent-secondary);
   padding: var(--space-2) var(--space-3);
   font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .callout-warning {
@@ -507,6 +558,21 @@ input:focus-visible,
   font-size: 0.85rem;
 }
 
+/* ---------- Responsive nav (tablet): el nav en una sola fila ya iba muy
+ * ajustado a 768px (limite exacto); los iconos SVG (D6) sumaron unos px
+ * de mas y provocaban overflow horizontal. Reduce gaps sin tocar
+ * width/padding de ningun item individual (sin layout-shift de contenido,
+ * solo menos aire entre items). ---------- */
+@media (max-width: 860px) {
+  .nav {
+    gap: var(--space-2);
+  }
+
+  .nav-links {
+    gap: var(--space-3);
+  }
+}
+
 /* ---------- Responsive nav (mobile) ---------- */
 @media (max-width: 640px) {
   .nav-links {
@@ -529,7 +595,7 @@ input:focus-visible,
     display: inline-block;
   }
 
-  .btn-github span {
+  .btn-github .icon {
     display: none;
   }
 }

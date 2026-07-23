@@ -5,17 +5,46 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Guía de uso — ErickFP</title>
 <meta name="description" content="Guía de uso de ErickFP: qué es, requisitos, instalación, erickfp init, erickfp chat y el Ciclo Cogito completo (duda, divide, ordena, enumera).">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Guía de uso — ErickFP">
+<meta property="og:description" content="De cero a tu primera sesión completa con ErickFP: requisitos, instalación, erickfp init, erickfp chat y el Ciclo Cogito (duda, divide, ordena, enumera).">
+<meta property="og:url" content="https://erickfp7314.github.io/harnes-erickfp/guia.html">
+<meta property="og:image" content="https://erickfp7314.github.io/harnes-erickfp/assets/img/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Guía de uso — ErickFP">
+<meta name="twitter:description" content="De cero a tu primera sesión completa con ErickFP: requisitos, instalación, erickfp init, erickfp chat y el Ciclo Cogito (duda, divide, ordena, enumera).">
+<meta name="twitter:image" content="https://erickfp7314.github.io/harnes-erickfp/assets/img/og-image.png">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/css/theme.css">
 <link rel="stylesheet" href="assets/css/guia.css">
 </head>
 <body>
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6h18M3 12h18M3 18h18"/>
+    </symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3l2.6 5.7 6.2.6-4.7 4.2 1.4 6.2L12 16.9l-5.5 2.8 1.4-6.2-4.7-4.2 6.2-.6z"/>
+    </symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4.5l8.5 15h-17z"/>
+      <line x1="12" y1="10.5" x2="12" y2="14"/>
+      <circle cx="12" cy="16.8" r="0.75" fill="currentColor" stroke="none"/>
+    </symbol>
+  </defs>
+</svg>
+
 <a class="skip-link" href="#main">Saltar al contenido</a>
 
 <header class="site-header">
   <nav class="nav container" aria-label="Navegación principal">
     <a href="index.html" class="logo"><span aria-hidden="true">&gt; </span>erickfp<span class="cursor-caret">_</span></a>
-    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menú">☰</button>
+    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menú">
+      <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-menu"/></svg>
+    </button>
     <ul class="nav-links" id="nav-links">
       <li><a href="index.html#features">Features</a></li>
       <li><a href="index.html#ciclo">Cómo funciona</a></li>
@@ -23,7 +52,7 @@
       <li><a href="index.html">← Volver al inicio</a></li>
     </ul>
     <a class="btn btn-github" href="https://github.com/ErickFP7314/harnes-erickfp" target="_blank" rel="noopener noreferrer">
-      <span aria-hidden="true">★</span> GitHub
+      <svg class="icon icon-inline" aria-hidden="true" focusable="false"><use href="#icon-star"/></svg> GitHub
     </a>
   </nav>
 </header>
@@ -72,7 +101,7 @@
         </li>
       </ol>
       <p class="callout callout-warning">
-        <span aria-hidden="true">[!]</span> <strong>Tu API key es como una contraseña.</strong> No la pegues en chats, capturas de pantalla ni
+        <svg class="icon icon-danger icon-inline" aria-hidden="true" focusable="false"><use href="#icon-alert"/></svg> <strong>Tu API key es como una contraseña.</strong> No la pegues en chats, capturas de pantalla ni
         documentos compartidos — Google detecta keys expuestas y las desactiva automáticamente.
       </p>
     </section>
@@ -306,7 +335,9 @@ tu&gt; salir</pre>
 
 <footer class="site-footer">
   <div class="container footer-inner">
-    <p>ErickFP — harness agéntico CLI. Proyecto personal educativo.</p>
+    <p>ErickFP — harness agéntico CLI. Proyecto personal educativo, filosofía heredada de
+      <a href="https://github.com/betta-tech/byo-coding-agent" target="_blank" rel="noopener noreferrer">byo-coding-agent</a>.
+    </p>
     <p class="footer-links">
       <a href="index.html">Inicio</a> ·
       <a href="guia.html">Guía de uso</a> ·

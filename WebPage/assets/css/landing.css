@@ -93,12 +93,20 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
   padding: var(--space-3);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .cogito-step:hover {
   border-color: var(--accent-secondary);
-  box-shadow: var(--glow-green);
+  box-shadow: var(--shadow-md), var(--glow-green);
+  transform: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cogito-step:hover {
+    transform: none;
+  }
 }
 
 .cogito-phase {
@@ -183,6 +191,9 @@
   border-radius: var(--radius);
   overflow: hidden;
   max-width: 760px;
+  /* Anillo ambiente muy sutil + sombra de profundidad -- panel destacado
+   * de la seccion (D-visual, task 2: glow en elementos destacados). */
+  box-shadow: var(--shadow-md), 0 0 32px rgba(0, 255, 255, 0.06);
 }
 
 .terminal-titlebar {
@@ -235,6 +246,10 @@
   color: var(--accent-secondary);
 }
 
+.demo-output .deny-line {
+  color: var(--accent-danger);
+}
+
 .btn-replay {
   display: block;
   margin: 0 var(--space-3) var(--space-3) auto;
@@ -253,12 +268,20 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
   padding: var(--space-3);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .feature-card:hover {
   border-color: var(--accent-primary);
-  box-shadow: var(--glow-cyan);
+  box-shadow: var(--shadow-md), var(--glow-cyan);
+  transform: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feature-card:hover {
+    transform: none;
+  }
 }
 
 .feature-card h3 {
@@ -315,12 +338,20 @@
   border-radius: var(--radius);
   padding: var(--space-3);
   margin: 0;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .tweet-card:hover {
   border-color: var(--accent-secondary);
-  box-shadow: var(--glow-green);
+  box-shadow: var(--shadow-md), var(--glow-green);
+  transform: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tweet-card:hover {
+    transform: none;
+  }
 }
 
 .avatar {

@@ -9,6 +9,11 @@
  * Si JS está deshabilitado, el <pre id="demo-output"> ya trae el texto
  * final completo -- por eso este script NUNCA borra el contenido antes de
  * confirmar que puede animar.
+ *
+ * El guion incluye DOS tool-calls (una aprobada con "y", otra denegada con
+ * "n") para mostrar ambos lados del gate de permisos, y termina con un
+ * cursor "█" parpadeante (reutiliza .cursor-caret, ya congelado bajo
+ * prefers-reduced-motion por la regla global de theme.css).
  */
 
 (function () {
@@ -28,6 +33,15 @@
     {
       type: "out",
       text: "erickfp> Encontré 42 archivos .py, principalmente bajo src/erickfp/.",
+    },
+    { type: "cmd", text: "tu> borra la carpeta node_modules para liberar espacio" },
+    { type: "out", text: "[tool] bash {\"command\": \"rm -rf node_modules\"}" },
+    { type: "gate", text: "¿aprobar? [y/n] › n" },
+    { type: "deny", text: "✗ denegado por el usuario" },
+    {
+      type: "out",
+      text:
+        "erickfp> Entendido, no borro nada. ¿Reviso primero cuánto espacio ocupa node_modules?",
     },
   ];
 
@@ -55,12 +69,17 @@
     el.textContent = lines.join("\n");
   }
 
+  var LINE_CLASS_BY_TYPE = {
+    gate: "gate-line",
+    deny: "deny-line",
+  };
+
   async function playDemo(el) {
     el.textContent = "";
     for (var i = 0; i < SCRIPT.length; i++) {
       var step = SCRIPT[i];
       var lineEl = document.createElement("span");
-      lineEl.className = step.type === "gate" ? "gate-line" : "";
+      lineEl.className = LINE_CLASS_BY_TYPE[step.type] || "";
       el.appendChild(lineEl);
 
       for (var c = 0; c < step.text.length; c++) {
@@ -73,6 +92,15 @@
       // eslint-disable-next-line no-await-in-loop
       await sleep(step.type === "gate" ? GATE_PAUSE_MS : LINE_PAUSE_MS);
     }
+
+    // Cursor final parpadeante -- reutiliza .cursor-caret (ya congelado bajo
+    // prefers-reduced-motion por la regla global de theme.css; aquí nunca
+    // se llega con reduced-motion activo porque initTerminalDemo corta antes).
+    var caret = document.createElement("span");
+    caret.className = "cursor-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.textContent = "█";
+    el.appendChild(caret);
   }
 
   function initTerminalDemo() {

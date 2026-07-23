@@ -5,18 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ErickFP — harness agéntico CLI gobernado por el método cartesiano</title>
 <meta name="description" content="ErickFP es un harness agéntico de línea de comandos: el modelo es el motor, el harness es todo lo demás. Método cartesiano, gate de permisos sin fuga, núcleo sagrado y trazabilidad ADR.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ErickFP — harness agéntico CLI gobernado por el método cartesiano">
+<meta property="og:description" content="El modelo es el motor, el harness es todo lo demás. Método cartesiano, gate de permisos sin fuga, núcleo sagrado y trazabilidad ADR.">
+<meta property="og:url" content="https://erickfp7314.github.io/harnes-erickfp/">
+<meta property="og:image" content="https://erickfp7314.github.io/harnes-erickfp/assets/img/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ErickFP — harness agéntico CLI gobernado por el método cartesiano">
+<meta name="twitter:description" content="El modelo es el motor, el harness es todo lo demás. Método cartesiano, gate de permisos sin fuga, núcleo sagrado y trazabilidad ADR.">
+<meta name="twitter:image" content="https://erickfp7314.github.io/harnes-erickfp/assets/img/og-image.png">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/css/theme.css">
 <link rel="stylesheet" href="assets/css/portada.css">
 <link rel="stylesheet" href="assets/css/landing.css">
 </head>
 <body>
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6h18M3 12h18M3 18h18"/>
+    </symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3l2.6 5.7 6.2.6-4.7 4.2 1.4 6.2L12 16.9l-5.5 2.8 1.4-6.2-4.7-4.2 6.2-.6z"/>
+    </symbol>
+    <symbol id="icon-replay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 12a8 8 0 1 1-2.6-5.9"/>
+      <path d="M20 3v5h-5"/>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12.5l4.5 4.5L19 7"/>
+    </symbol>
+    <symbol id="icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12h14"/>
+    </symbol>
+    <symbol id="icon-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4.5l8.5 15h-17z"/>
+    </symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4.5l8.5 15h-17z"/>
+      <line x1="12" y1="10.5" x2="12" y2="14"/>
+      <circle cx="12" cy="16.8" r="0.75" fill="currentColor" stroke="none"/>
+    </symbol>
+  </defs>
+</svg>
+
 <a class="skip-link" href="#main">Saltar al contenido</a>
 
 <header class="site-header">
   <nav class="nav container" aria-label="Navegación principal">
     <a href="#hero" class="logo"><span aria-hidden="true">&gt; </span>erickfp<span class="cursor-caret">_</span></a>
-    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menú">☰</button>
+    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menú">
+      <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-menu"/></svg>
+    </button>
     <ul class="nav-links" id="nav-links">
       <li><a href="#features" data-nav>Features</a></li>
       <li><a href="#ciclo" data-nav>Cómo funciona</a></li>
@@ -24,7 +66,7 @@
       <li><a href="guia.html">Guía</a></li>
     </ul>
     <a class="btn btn-github" href="https://github.com/ErickFP7314/harnes-erickfp" target="_blank" rel="noopener noreferrer">
-      <span aria-hidden="true">★</span> GitHub
+      <svg class="icon icon-inline" aria-hidden="true" focusable="false"><use href="#icon-star"/></svg> GitHub
     </a>
   </nav>
 </header>
@@ -217,10 +259,18 @@ cd harnes-erickfp</code></pre>
 ErickFP chat -- Ctrl+D o 'salir' para terminar. Escribe /help para ver los comandos disponibles.
 tu&gt; ¿qué archivos python hay en este proyecto?
 [tool] bash {"command": "find . -name '*.py'"}
-¿aprobar? [y/n] › y
+<span class="gate-line">¿aprobar? [y/n] › y</span>
 ✓ ejecutando… 42 archivos encontrados
-erickfp&gt; Encontré 42 archivos .py, principalmente bajo src/erickfp/.</pre>
-        <button class="btn btn-secondary btn-replay" id="demo-replay" type="button">▶ replay</button>
+erickfp&gt; Encontré 42 archivos .py, principalmente bajo src/erickfp/.
+tu&gt; borra la carpeta node_modules para liberar espacio
+[tool] bash {"command": "rm -rf node_modules"}
+<span class="gate-line">¿aprobar? [y/n] › n</span>
+<span class="deny-line">✗ denegado por el usuario</span>
+erickfp&gt; Entendido, no borro nada. ¿Reviso primero cuánto espacio ocupa node_modules?
+<span class="cursor-caret" aria-hidden="true">█</span></pre>
+        <button class="btn btn-secondary btn-replay" id="demo-replay" type="button">
+          <svg class="icon icon-inline" aria-hidden="true" focusable="false"><use href="#icon-replay"/></svg> replay
+        </button>
       </div>
     </div>
   </section>
@@ -309,38 +359,38 @@ erickfp&gt; Encontré 42 archivos .py, principalmente bajo src/erickfp/.</pre>
           <tbody>
             <tr>
               <th scope="row">Método cartesiano por fases obligatorias</th>
-              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
-              <td class="no">— <span class="visually-hidden">no</span></td>
-              <td class="no">— <span class="visually-hidden">no</span></td>
-              <td class="no">— <span class="visually-hidden">no</span></td>
+              <td class="yes"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-check"/></svg> <span class="visually-hidden">sí</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span></td>
             </tr>
             <tr>
               <th scope="row">Grafo ADR con trazabilidad verificada (DFS a raíz)</th>
-              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
-              <td class="no">— <span class="visually-hidden">no</span></td>
-              <td class="no">— <span class="visually-hidden">no</span></td>
-              <td class="no">— <span class="visually-hidden">no</span></td>
+              <td class="yes"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-check"/></svg> <span class="visually-hidden">sí</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span></td>
             </tr>
             <tr>
               <th scope="row">Núcleo de reglas que ni una aprobación humana puede saltarse</th>
-              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
-              <td class="partial">△ <span class="visually-hidden">parcial:</span> <span class="table-note">(gate de permisos sí existe, sin núcleo separado inmutable)</span></td>
-              <td class="no">— <span class="visually-hidden">no</span></td>
-              <td class="no">— <span class="visually-hidden">no</span></td>
+              <td class="yes"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-check"/></svg> <span class="visually-hidden">sí</span></td>
+              <td class="partial"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-triangle"/></svg> <span class="visually-hidden">parcial:</span> <span class="table-note">(gate de permisos sí existe, sin núcleo separado inmutable)</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span></td>
             </tr>
             <tr>
               <th scope="row">Provider-agnostic (cambiar de modelo sin reescribir el harness)</th>
-              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
-              <td class="no">— <span class="visually-hidden">no</span> (nativo Anthropic)</td>
-              <td class="yes">✓ <span class="visually-hidden">sí</span></td>
-              <td class="partial">△ <span class="visually-hidden">parcial</span></td>
+              <td class="yes"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-check"/></svg> <span class="visually-hidden">sí</span></td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span> (nativo Anthropic)</td>
+              <td class="yes"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-check"/></svg> <span class="visually-hidden">sí</span></td>
+              <td class="partial"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-triangle"/></svg> <span class="visually-hidden">parcial</span></td>
             </tr>
             <tr>
               <th scope="row">Gratis por defecto (free tier sin tarjeta)</th>
-              <td class="yes">✓ <span class="visually-hidden">sí</span> (Gemini)</td>
-              <td class="no">— <span class="visually-hidden">no</span> (requiere suscripción/API de pago)</td>
-              <td class="partial">△ <span class="visually-hidden">parcial</span> (depende del modelo configurado)</td>
-              <td class="partial">△ <span class="visually-hidden">parcial</span></td>
+              <td class="yes"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-check"/></svg> <span class="visually-hidden">sí</span> (Gemini)</td>
+              <td class="no"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-minus"/></svg> <span class="visually-hidden">no</span> (requiere suscripción/API de pago)</td>
+              <td class="partial"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-triangle"/></svg> <span class="visually-hidden">parcial</span> (depende del modelo configurado)</td>
+              <td class="partial"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-triangle"/></svg> <span class="visually-hidden">parcial</span></td>
             </tr>
           </tbody>
         </table>
@@ -353,7 +403,7 @@ erickfp&gt; Encontré 42 archivos .py, principalmente bajo src/erickfp/.</pre>
     <div class="container">
       <h2>Lo que dicen (personas ficticias)</h2>
       <p class="fiction-disclaimer">
-        <span aria-hidden="true">[!]</span> Los testimonios siguientes son <strong>ficticios</strong>: nombres, handles y citas fueron inventados
+        <svg class="icon icon-danger icon-inline" aria-hidden="true" focusable="false"><use href="#icon-alert"/></svg> Los testimonios siguientes son <strong>ficticios</strong>: nombres, handles y citas fueron inventados
         para ilustrar casos de uso — ninguna persona real los escribió.
       </p>
       <div class="testimonials-grid reveal">
